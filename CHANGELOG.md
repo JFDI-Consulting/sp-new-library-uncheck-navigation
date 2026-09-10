@@ -2,6 +2,24 @@
 
 All notable changes to sp-new-library-uncheck-navigation are documented in this file.
 
+## [1.0.0.3] - 2026-09-10
+
+### Added
+
+- **Per-site on/off switch.** Site owners see a status bar on Site contents with a **Change** link
+  that opens a panel with a single toggle. Switching it off leaves SharePoint's standard behaviour in
+  place without removing the app; switching it back on takes effect immediately. The panel can also
+  be opened directly with `?jfdiUncheckNav=settings` on Site contents. The bar follows SharePoint's
+  client-side navigation, so it appears whether Site contents is reached by link or by URL
+- **`enabled` property** on the custom action backs the switch, so admins can also set it with CLI
+  for Microsoft 365 or PnP PowerShell
+
+### Internal
+
+- The end-to-end proof now also switches the customizer off and on through the UI and checks the
+  checkbox state each time
+- Investigated and documented why a Site Settings link is not possible on NoScript sites
+
 ## [1.0.0.2] - 2026-09-10
 
 First published release.

@@ -1,9 +1,17 @@
 import { Log } from '@microsoft/sp-core-library';
-import { BaseApplicationCustomizer } from '@microsoft/sp-application-base';
+import { BaseApplicationCustomizer, PlaceholderContent, PlaceholderName } from '@microsoft/sp-application-base';
+import { SPPermission } from '@microsoft/sp-page-context';
 
 import * as strings from 'UncheckSiteNavigationApplicationCustomizerStrings';
+import { SettingsService } from './SettingsService';
+import type { ISettingsUiHandle } from './SettingsUi';
 
 const LOG_SOURCE: string = 'UncheckSiteNavigationApplicationCustomizer';
+
+/** Query-string key that opens the settings panel on Site contents. */
+export const SETTINGS_QUERY_KEY: string = 'jfdiUncheckNav';
+const SETTINGS_QUERY_VALUE: string = 'settings';
+const SITE_CONTENTS_PATH: RegExp = /\/_layouts\/15\/viewlsts\.aspx$/i;
 
 /**
  * Properties supplied via ClientSideComponentProperties on the custom action.
@@ -17,6 +25,12 @@ export interface IUncheckSiteNavigationApplicationCustomizerProperties {
   labels?: string[];
   /** Emit verbose console logging. */
   debug?: boolean;
+  /**
+   * Switch the behaviour on or off for this site. Absent means on. Site
+   * owners can change this from the settings panel on Site contents; it is
+   * stored back into this same property on the custom action.
+   */
+  enabled?: boolean;
 }
 
 const DEFAULT_LABELS: string[] = [
@@ -54,6 +68,10 @@ export default class UncheckSiteNavigationApplicationCustomizer
   private _labels: string[] = [];
   private _scanScheduled: boolean = false;
   private _disposed: boolean = false;
+  private _enabled: boolean = true;
+  private _topPlaceholder: PlaceholderContent | undefined;
+  private _settingsUi: ISettingsUiHandle | undefined;
+  private _mounting: boolean = false;
 
   public onInit(): Promise<void> {
     Log.info(LOG_SOURCE, `Initialized ${strings.Title}`);
@@ -61,6 +79,8 @@ export default class UncheckSiteNavigationApplicationCustomizer
     const configured: string[] | undefined = this.properties && this.properties.labels;
     const source: string[] = Array.isArray(configured) && configured.length > 0 ? configured : DEFAULT_LABELS;
     this._labels = source.map(this._normalise).filter((l: string) => l.length > 0);
+    this._enabled = SettingsService.isEnabled(this.properties);
+    this._log(`Enabled: ${this._enabled}`);
 
     if (typeof MutationObserver === 'undefined' || !document.body) {
       Log.warn(LOG_SOURCE, 'MutationObserver or document.body unavailable; customizer inactive.');
@@ -69,6 +89,12 @@ export default class UncheckSiteNavigationApplicationCustomizer
 
     this._hookDocument(document);
     this._scheduleScan();
+
+    // Modern SharePoint navigates client-side without re-running onInit, so
+    // the settings UI has to follow route and placeholder changes.
+    this.context.application.navigatedEvent.add(this, this._syncSettingsUi);
+    this.context.placeholderProvider.changedEvent.add(this, this._syncSettingsUi);
+    this._syncSettingsUi();
 
     return Promise.resolve();
   }
@@ -79,7 +105,94 @@ export default class UncheckSiteNavigationApplicationCustomizer
       o.disconnect();
     }
     this._observers = [];
+    this.context.application.navigatedEvent.remove(this, this._syncSettingsUi);
+    this.context.placeholderProvider.changedEvent.remove(this, this._syncSettingsUi);
+    this._unmountSettingsUi();
     super.onDispose();
+  }
+
+  /**
+   * Mount the settings UI on Site contents and remove it everywhere else.
+   * Idempotent: safe to call on every navigation and placeholder change.
+   *
+   * On Site contents, users who can manage the web get a status bar in the
+   * Top placeholder with a link to the settings panel. The panel also opens
+   * when the page URL carries ?jfdiUncheckNav=settings, so it can be linked
+   * from anywhere. Site Settings itself is a classic page where this
+   * customizer cannot run, and NoScript sites refuse Site Settings links.
+   */
+  private _syncSettingsUi(): void {
+    if (this._disposed) {
+      return;
+    }
+    if (!SITE_CONTENTS_PATH.test(window.location.pathname)) {
+      this._unmountSettingsUi();
+      return;
+    }
+    if (this._settingsUi || this._mounting) {
+      return;
+    }
+    const canManage: boolean = this.context.pageContext.web.permissions.hasPermission(SPPermission.manageWeb);
+    const requested: boolean = new URLSearchParams(window.location.search).get(SETTINGS_QUERY_KEY) === SETTINGS_QUERY_VALUE;
+    if (!canManage && !requested) {
+      return;
+    }
+
+    const placeholder: PlaceholderContent | undefined = this.context.placeholderProvider.tryCreateContent(PlaceholderName.Top);
+    if (!placeholder) {
+      this._log('Top placeholder not available yet; waiting for placeholderProvider.changedEvent.');
+      return;
+    }
+    this._topPlaceholder = placeholder;
+    this._mounting = true;
+
+    const service: SettingsService = new SettingsService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl);
+    // React and Fluent UI live in a separate chunk so every other page load
+    // pays nothing for a feature only site owners see on Site contents.
+    import(/* webpackChunkName: 'uncheck-nav-settings' */ './SettingsUi')
+      .then((mod) => {
+        this._mounting = false;
+        if (this._disposed || this._topPlaceholder !== placeholder) {
+          return;
+        }
+        this._settingsUi = mod.renderSettingsUi(placeholder.domElement, {
+          enabled: this._enabled,
+          canEdit: canManage,
+          openOnMount: requested,
+          onSave: async (enabled: boolean): Promise<void> => {
+            await service.setEnabled(enabled);
+            this._enabled = enabled;
+            this._log(`Setting saved: enabled=${enabled}`);
+            this._scheduleScan();
+          }
+        });
+        if (requested) {
+          this._stripSettingsQuery();
+        }
+      })
+      .catch((e: Error) => {
+        this._mounting = false;
+        Log.error(LOG_SOURCE, e);
+      });
+  }
+
+  private _unmountSettingsUi(): void {
+    if (this._settingsUi) {
+      this._settingsUi.unmount();
+      this._settingsUi = undefined;
+    }
+    if (this._topPlaceholder) {
+      this._topPlaceholder.dispose();
+      this._topPlaceholder = undefined;
+    }
+  }
+
+  /** Remove only our own query parameter so a refresh does not reopen the panel. */
+  private _stripSettingsQuery(): void {
+    const search: string = window.location.search.replace(/^\?/, '');
+    const kept: string[] = search.split('&').filter((p: string) => p && p.split('=')[0] !== SETTINGS_QUERY_KEY);
+    const url: string = window.location.pathname + (kept.length ? `?${kept.join('&')}` : '') + window.location.hash;
+    window.history.replaceState(window.history.state, '', url);
   }
 
   /** Observe a document (top or iframe) for DOM changes. Idempotent per document. */
@@ -142,6 +255,10 @@ export default class UncheckSiteNavigationApplicationCustomizer
 
   private _scanDocument(doc: Document): void {
     this._hookFrames(doc);
+
+    if (!this._enabled) {
+      return; // switched off for this site; keep observing so a save takes effect live
+    }
 
     const controls: Element[] = Array.from(doc.querySelectorAll(CONTROL_SELECTOR));
     for (const control of controls) {

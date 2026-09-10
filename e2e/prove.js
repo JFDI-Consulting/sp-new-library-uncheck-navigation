@@ -1,6 +1,7 @@
 // Headed Playwright proof: on a site with the app installed the 'Show in site navigation'
 // checkbox must be unchecked for both List and Document library; on a control site without
-// the app it must be checked. Sign in once in the browser window; the profile persists in
+// the app it must be checked. Then the settings panel is used to switch the customizer off
+// (checkbox stays checked) and back on (unchecked again). Sign in once in the browser window; the profile persists in
 // ~/.cache/pw-sp-profile. Usage: TEST_SITE=... CONTROL_SITE=... node e2e/prove.js
 const { chromium } = require('playwright');
 const path = require('path');
@@ -88,6 +89,68 @@ async function checkSite(page, siteUrl, tag) {
   return results;
 }
 
+// Settings panel proof: on the test site, switch the customizer off from the status bar on
+// Site contents, confirm the checkbox is then left checked, then switch it back on via the
+// query-string deep link and confirm it is unchecked again.
+async function setEnabledViaPanel(page, siteUrl, enabled, how) {
+  const url = how === 'query' ? `${siteUrl}/_layouts/15/viewlsts.aspx?jfdiUncheckNav=settings` : `${siteUrl}/_layouts/15/viewlsts.aspx`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await waitForSignIn(page);
+  const bar = page.locator('[data-automation-id="jfdi-unav-bar"]');
+  await bar.waitFor({ state: 'visible', timeout: 30000 });
+  console.log(`  status bar: "${(await bar.innerText()).trim()}"`);
+  if (how !== 'query') {
+    await page.locator('[data-automation-id="jfdi-unav-change"]').click();
+  }
+  const toggle = page.locator('[data-automation-id="jfdi-unav-toggle"]');
+  await toggle.waitFor({ state: 'visible', timeout: 15000 });
+  await page.waitForTimeout(500);
+  if ((await toggle.isChecked()) !== enabled) {
+    await toggle.click();
+  }
+  await page.screenshot({ path: path.join(SHOTS, `settings-panel-${enabled ? 'enable' : 'disable'}.png`) });
+  await page.locator('[data-automation-id="jfdi-unav-save"]').click();
+  await toggle.waitFor({ state: 'hidden', timeout: 15000 });
+  console.log(`  saved enabled=${enabled} via ${how}`);
+}
+
+async function checkListCheckbox(page, siteUrl, tag) {
+  await page.goto(`${siteUrl}/_layouts/15/viewlsts.aspx`, { waitUntil: 'domcontentloaded' });
+  await waitForSignIn(page);
+  const cb = await openCreatePanel(page, 'List');
+  const checked = await cb.isChecked();
+  await page.screenshot({ path: path.join(SHOTS, `${tag}-list.png`) });
+  console.log(`[${tag}] List: checked=${checked}`);
+  await closeOverlays(page);
+  return checked;
+}
+
+// Reach Site contents by client-side navigation (no page load) and confirm the status bar
+// appears, then leave by client-side navigation and confirm it goes away again.
+async function checkPartialNavigation(page, siteUrl) {
+  await page.goto(siteUrl, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(4000);
+  const bar = page.locator('[data-automation-id="jfdi-unav-bar"]');
+  const onHome = await bar.isVisible().catch(() => false);
+  await page.getByRole('link', { name: /^Site contents$/ }).first().click();
+  await bar.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
+  const onSiteContents = await bar.isVisible().catch(() => false);
+  await page.screenshot({ path: path.join(SHOTS, 'partial-nav-site-contents.png') });
+  await page.getByRole('link', { name: /^Home$/ }).first().click();
+  await page.waitForTimeout(3000);
+  const backOnHome = await bar.isVisible().catch(() => false);
+  console.log(`[partial-nav] bar on home=${onHome}, after clicking Site contents=${onSiteContents}, back on home=${backOnHome}`);
+  return { onHome, onSiteContents, backOnHome };
+}
+
+async function checkSettings(page, siteUrl) {
+  await setEnabledViaPanel(page, siteUrl, false, 'bar');
+  const whileDisabled = await checkListCheckbox(page, siteUrl, 'with-app-disabled');
+  await setEnabledViaPanel(page, siteUrl, true, 'query');
+  const afterReenable = await checkListCheckbox(page, siteUrl, 'with-app-reenabled');
+  return { whileDisabled, afterReenable };
+}
+
 (async () => {
   const context = await chromium.launchPersistentContext(PROFILE, {
     headless: false,
@@ -101,10 +164,14 @@ async function checkSite(page, siteUrl, tag) {
   try {
     const testResults = await checkSite(page, TEST_SITE, 'with-app');
     const controlResults = await checkSite(page, CONTROL_SITE, 'control-no-app');
-    const summary = { testSite: TEST_SITE, controlSite: CONTROL_SITE, withApp: testResults, control: controlResults };
+    const settings = await checkSettings(page, TEST_SITE);
+    const partialNav = await checkPartialNavigation(page, TEST_SITE);
+    const summary = { testSite: TEST_SITE, controlSite: CONTROL_SITE, withApp: testResults, control: controlResults, settings, partialNav };
     console.log(JSON.stringify(summary, null, 2));
     ok = Object.values(testResults).every((r) => r.checked === false)
-      && Object.values(controlResults).every((r) => r.checked === true);
+      && Object.values(controlResults).every((r) => r.checked === true)
+      && settings.whileDisabled === true && settings.afterReenable === false
+      && partialNav.onHome === false && partialNav.onSiteContents === true && partialNav.backOnHome === false;
     console.log(ok ? 'PROOF: PASS' : 'PROOF: FAIL');
   } catch (e) {
     console.error('ERROR:', e.message);

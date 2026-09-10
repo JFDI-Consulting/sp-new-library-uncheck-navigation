@@ -13,7 +13,7 @@ lib-dts
 lib-commonjs
 lib-esm
 jest-output
-release
+/release
 solution
 temp
 *.sppkg

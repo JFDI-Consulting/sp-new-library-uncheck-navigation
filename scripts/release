@@ -1,0 +1,96 @@
+#!/bin/bash
+# Release script: bump the version, build, tag, and publish a GitHub Release.
+#
+# Usage: ./scripts/release [--no-publish]
+#
+# 1. Runs ./build.sh --increment-version (bumps package.json, package-lock.json
+#    and config/package-solution.json together, then builds the .sppkg)
+# 2. Reads the 4-part version from config/package-solution.json
+# 3. Checks CHANGELOG.md has an entry for that version (write it first)
+# 4. Commits the version files, tags v{version}, pushes, and publishes a GitHub
+#    Release with the .sppkg attached (skipped with --no-publish)
+#
+# The package is never committed (*.sppkg is ignored); the GitHub Release is
+# how a version is distributed.
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+PUBLISH=true
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-publish) PUBLISH=false; shift ;;
+    *) echo "Unknown option: $1"; echo "Usage: $0 [--no-publish]"; exit 1 ;;
+  esac
+done
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+REPO="JFDI-Consulting/sp-new-library-uncheck-navigation"
+PACKAGE_SOURCE="sharepoint/solution/sp-new-library-uncheck-navigation.sppkg"
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo -e "${RED}Error: working tree has uncommitted changes. Commit or stash them first.${NC}"
+  git status --short --untracked-files=no
+  exit 1
+fi
+
+echo -e "${BLUE}Starting release build...${NC}"
+./build.sh --increment-version
+
+VERSION=$(node -p "require('./config/package-solution.json').solution.version")
+if [ -z "$VERSION" ]; then
+  echo -e "${RED}Error: Could not read version from config/package-solution.json${NC}"
+  exit 1
+fi
+echo -e "${BLUE}Version: ${VERSION}${NC}"
+
+if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
+  echo -e "${RED}Error: CHANGELOG.md has no '## [${VERSION}]' entry. Add one, then re-run.${NC}"
+  echo "(The version files have been bumped; the changelog entry is the only missing piece.)"
+  exit 1
+fi
+
+# Release notes = the changelog section for this version.
+NOTES_FILE="$(mktemp)"
+awk -v v="$VERSION" '
+  $0 ~ "^## \\[" v "\\]" { on=1; next }
+  on && /^## \[/ { exit }
+  on { print }
+' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' > "$NOTES_FILE"
+
+echo ""
+echo -e "${GREEN}Release build complete!${NC}"
+echo -e "  Version: ${BLUE}v${VERSION}${NC}"
+echo -e "  Package: ${BLUE}${PACKAGE_SOURCE}${NC} ($(du -h "$PACKAGE_SOURCE" | cut -f1))"
+
+if [ "$PUBLISH" = false ]; then
+  echo ""
+  echo -e "${BLUE}--no-publish: not committing, tagging or publishing.${NC}"
+  echo "  git add package.json config/package-solution.json package-lock.json CHANGELOG.md"
+  echo "  git commit -m \"release: v${VERSION}\""
+  echo "  git tag v${VERSION} && git push && git push origin v${VERSION}"
+  echo "  gh release create v${VERSION} ${PACKAGE_SOURCE} -R ${REPO} -t v${VERSION} -F <notes>"
+  rm -f "$NOTES_FILE"
+  exit 0
+fi
+
+echo ""
+echo -e "${BLUE}Committing, tagging and publishing v${VERSION}...${NC}"
+git add package.json config/package-solution.json package-lock.json CHANGELOG.md
+git commit -q -m "release: v${VERSION}"
+git tag "v${VERSION}"
+
+REMOTE_URL="$(git remote get-url origin 2>/dev/null || echo "https://github.com/${REPO}.git")"
+git push "$REMOTE_URL" HEAD:main
+git push "$REMOTE_URL" "v${VERSION}"
+
+gh release create "v${VERSION}" "$PACKAGE_SOURCE" -R "$REPO" -t "v${VERSION}" -F "$NOTES_FILE"
+rm -f "$NOTES_FILE"
+
+echo ""
+echo -e "${GREEN}Published:${NC} https://github.com/${REPO}/releases/tag/v${VERSION}"

@@ -7,11 +7,11 @@
     "includeClientSideAssets": true,
     "isDomainIsolated": false,
     "developer": {
-      "name": "",
-      "websiteUrl": "",
-      "privacyUrl": "",
-      "termsOfUseUrl": "",
-      "mpnId": ""
+      "name": "JFDI Consulting Ltd",
+      "websiteUrl": "https://jfdi.info",
+      "privacyUrl": "https://jfdi.info/about/policies/privacy/",
+      "termsOfUseUrl": "https://jfdi.info/about/policies/terms-of-use/",
+      "mpnId": "2339010"
     },
     "metadata": {
       "shortDescription": {

@@ -31,6 +31,19 @@ npm run build          # lint + compile + bundle + package
 
 The package is written to `sharepoint/solution/sp-new-library-uncheck-navigation.sppkg`.
 
+## Release
+
+```bash
+./scripts/release            # bump version, build, commit, tag vX.Y.0.Z, publish GitHub Release
+./scripts/release --no-publish   # bump and build only; prints the manual steps
+```
+
+Write the `## [X.Y.0.Z]` entry in `CHANGELOG.md` before running it (the script
+refuses to publish without one). The version is bumped across `package.json`,
+`package-lock.json` and `config/package-solution.json` by `increment-version.sh`,
+which aligns them to the highest version found and increments the patch. The
+`.sppkg` is never committed; it is attached to the GitHub Release.
+
 ## Deploy
 
 1. Upload the `.sppkg` to the tenant App Catalog (or a site collection App Catalog).

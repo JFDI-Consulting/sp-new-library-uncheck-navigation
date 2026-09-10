@@ -25,24 +25,35 @@ const DEFAULT_LABELS: string[] = [
   'Show library in site navigation'
 ];
 
+/** Delays between verification retries after a click, in milliseconds. */
+const RETRY_DELAYS_MS: number[] = [150, 400, 800, 1500];
+
+const CONTROL_SELECTOR: string = 'input[type="checkbox"], [role="switch"], [role="checkbox"]';
+
 /**
  * Application Customizer that watches the page for the modern
- * "Create list" / "Create document library" panels and flips the
+ * "Create list" / "Create document library" experience and flips the
  * "Show in site navigation" checkbox off the first time it appears.
  *
  * SharePoint has no server-side setting for this default, so the customizer
- * works on the rendered DOM: it observes mutations, finds a checkbox (or
- * Fluent UI toggle) whose accessible label matches one of the configured
- * strings, and clicks it once if it is checked. Each control element is only
- * touched once, so a user who deliberately re-ticks the box is not overridden.
+ * works on the rendered DOM. The create-list experience is hosted in a
+ * same-origin iframe (createlist.aspx) where SPFx extensions do not load, so
+ * the customizer observes the top document AND every same-origin iframe it
+ * can reach, re-hooking each iframe whenever it navigates.
+ *
+ * Each control element is only touched once, so a user who deliberately
+ * re-ticks the box is not overridden.
  */
 export default class UncheckSiteNavigationApplicationCustomizer
   extends BaseApplicationCustomizer<IUncheckSiteNavigationApplicationCustomizerProperties> {
 
-  private _observer: MutationObserver | undefined;
+  private _observers: MutationObserver[] = [];
+  private _hookedDocs: WeakSet<Document> = new WeakSet<Document>();
+  private _hookedFrames: WeakSet<HTMLIFrameElement> = new WeakSet<HTMLIFrameElement>();
   private _processed: WeakSet<Element> = new WeakSet<Element>();
   private _labels: string[] = [];
   private _scanScheduled: boolean = false;
+  private _disposed: boolean = false;
 
   public onInit(): Promise<void> {
     Log.info(LOG_SOURCE, `Initialized ${strings.Title}`);
@@ -56,33 +67,68 @@ export default class UncheckSiteNavigationApplicationCustomizer
       return Promise.resolve();
     }
 
-    this._observer = new MutationObserver(() => this._scheduleScan());
-    this._observer.observe(document.body, { childList: true, subtree: true });
-
-    // Cover anything already on the page when the customizer loads.
+    this._hookDocument(document);
     this._scheduleScan();
 
     return Promise.resolve();
   }
 
   protected onDispose(): void {
-    if (this._observer) {
-      this._observer.disconnect();
-      this._observer = undefined;
+    this._disposed = true;
+    for (const o of this._observers) {
+      o.disconnect();
     }
+    this._observers = [];
     super.onDispose();
+  }
+
+  /** Observe a document (top or iframe) for DOM changes. Idempotent per document. */
+  private _hookDocument(doc: Document): void {
+    if (this._hookedDocs.has(doc) || !doc.body) {
+      return;
+    }
+    this._hookedDocs.add(doc);
+    const observer: MutationObserver = new MutationObserver(() => this._scheduleScan());
+    observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['checked', 'aria-checked'] });
+    this._observers.push(observer);
+    this._log(`Observing document ${doc.location ? doc.location.pathname : '(unknown)'}`);
+  }
+
+  /** Find same-origin iframes in a document and hook their documents. */
+  private _hookFrames(doc: Document): void {
+    const frames: HTMLIFrameElement[] = Array.from(doc.querySelectorAll('iframe'));
+    for (const frame of frames) {
+      if (!this._hookedFrames.has(frame)) {
+        this._hookedFrames.add(frame);
+        // Re-hook after every navigation inside the frame (new document each time).
+        frame.addEventListener('load', () => this._scheduleScan());
+      }
+      const inner: Document | null = this._frameDocument(frame);
+      if (inner) {
+        this._hookDocument(inner);
+      }
+    }
+  }
+
+  private _frameDocument(frame: HTMLIFrameElement): Document | null {
+    try {
+      const doc: Document | null = frame.contentDocument;
+      return doc && doc.body ? doc : null; // cross-origin access throws or returns null
+    } catch {
+      return null;
+    }
   }
 
   /** Coalesce bursts of mutations into a single scan per animation frame. */
   private _scheduleScan(): void {
-    if (this._scanScheduled) {
+    if (this._scanScheduled || this._disposed) {
       return;
     }
     this._scanScheduled = true;
     const run = (): void => {
       this._scanScheduled = false;
       try {
-        this._scan();
+        this._scanDocument(document);
       } catch (e) {
         Log.error(LOG_SOURCE, e instanceof Error ? e : new Error(String(e)));
       }
@@ -94,51 +140,68 @@ export default class UncheckSiteNavigationApplicationCustomizer
     }
   }
 
-  private _scan(): void {
-    // Only look inside overlays (Fluent UI panels/dialogs render into layers).
-    // Falls back to the whole document if no layer host exists.
-    const roots: Element[] = Array.from(document.querySelectorAll('.ms-Layer, [role="dialog"]'));
-    const scopes: ParentNode[] = roots.length > 0 ? roots : [document];
+  private _scanDocument(doc: Document): void {
+    this._hookFrames(doc);
 
-    for (const scope of scopes) {
-      const controls: Element[] = Array.from(
-        scope.querySelectorAll('input[type="checkbox"], [role="switch"], [role="checkbox"]')
-      );
-      for (const control of controls) {
-        if (this._processed.has(control)) {
-          continue;
-        }
-        const label: string = this._normalise(this._getAccessibleName(control));
-        if (!label || this._labels.indexOf(label) === -1) {
-          continue;
-        }
-        this._processed.add(control);
-        this._uncheck(control, label);
+    const controls: Element[] = Array.from(doc.querySelectorAll(CONTROL_SELECTOR));
+    for (const control of controls) {
+      if (this._processed.has(control)) {
+        continue;
+      }
+      const label: string = this._normalise(this._getAccessibleName(control));
+      if (!label || this._labels.indexOf(label) === -1) {
+        continue;
+      }
+      this._processed.add(control);
+      this._uncheck(control, label);
+    }
+
+    // Recurse into hooked same-origin iframes.
+    const frames: HTMLIFrameElement[] = Array.from(doc.querySelectorAll('iframe'));
+    for (const frame of frames) {
+      const inner: Document | null = this._frameDocument(frame);
+      if (inner) {
+        this._scanDocument(inner);
       }
     }
   }
 
-  private _uncheck(control: Element, label: string): void {
-    const isChecked: boolean = control instanceof HTMLInputElement
-      ? control.checked
+  private _isChecked(control: Element): boolean {
+    return control instanceof (control.ownerDocument.defaultView || window).HTMLInputElement
+      ? (control as HTMLInputElement).checked
       : control.getAttribute('aria-checked') === 'true';
+  }
 
-    if (!isChecked) {
-      this._log(`"${label}" already unchecked.`);
+  /**
+   * Click the control to uncheck it, then verify. The create-list experience
+   * can render the checkbox before React has attached its handlers (or reset
+   * it on a later re-render), so a dropped click is retried with backoff.
+   */
+  private _uncheck(control: Element, label: string, attempt: number = 0): void {
+    if (!this._isChecked(control)) {
+      this._log(`"${label}" ${attempt === 0 ? 'already unchecked' : 'defaulted to unchecked'}.`);
       return;
     }
 
     // Use a real click so the React-controlled component updates its state.
     (control as HTMLElement).click();
 
-    const nowChecked: boolean = control instanceof HTMLInputElement
-      ? control.checked
-      : control.getAttribute('aria-checked') === 'true';
-    this._log(`"${label}" ${nowChecked ? 'could not be unchecked' : 'defaulted to unchecked'}.`);
+    if (attempt >= RETRY_DELAYS_MS.length) {
+      this._log(`"${label}" could not be unchecked after ${attempt + 1} attempts.`);
+      return;
+    }
+    window.setTimeout(() => {
+      if (this._disposed || !control.isConnected) {
+        return;
+      }
+      this._uncheck(control, label, attempt + 1);
+    }, RETRY_DELAYS_MS[attempt]);
   }
 
   /** Best-effort accessible name: aria-label, aria-labelledby, <label for>, wrapping <label>. */
   private _getAccessibleName(el: Element): string {
+    const doc: Document = el.ownerDocument;
+
     const ariaLabel: string | null = el.getAttribute('aria-label');
     if (ariaLabel) {
       return ariaLabel;
@@ -149,7 +212,7 @@ export default class UncheckSiteNavigationApplicationCustomizer
       const text: string = labelledBy
         .split(/\s+/)
         .map((id: string) => {
-          const node: HTMLElement | null = document.getElementById(id);
+          const node: HTMLElement | null = doc.getElementById(id);
           return node ? node.textContent || '' : '';
         })
         .join(' ');
@@ -159,7 +222,7 @@ export default class UncheckSiteNavigationApplicationCustomizer
     }
 
     if (el.id) {
-      const forLabel: Element | null = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+      const forLabel: Element | null = doc.querySelector(`label[for="${CSS.escape(el.id)}"]`);
       if (forLabel && forLabel.textContent) {
         return forLabel.textContent;
       }
@@ -179,7 +242,7 @@ export default class UncheckSiteNavigationApplicationCustomizer
 
   private _log(message: string): void {
     if (this.properties && this.properties.debug) {
-      Log.info(LOG_SOURCE, message);
+      console.log(`[${LOG_SOURCE}] ${message}`);
     }
   }
 }

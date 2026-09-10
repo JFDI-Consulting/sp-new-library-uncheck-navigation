@@ -6,9 +6,19 @@ SharePoint Framework (SPFx) **Application Customizer** that defaults the
 
 SharePoint has no server-side setting for this default, so the customizer works
 on the rendered page: it observes DOM mutations, finds the checkbox (or Fluent UI
-toggle) whose accessible label matches a configured string, and clicks it once if
-it is checked. Each control is only touched once, so a user who deliberately
+toggle) whose accessible label matches a configured string, and clicks it if it
+is checked. Each control is only targeted once, so a user who deliberately
 re-ticks the box is not overridden.
+
+Two details matter for how it does that:
+
+- The modern create experience is hosted in a **same-origin iframe**
+  (`/_layouts/15/createlist.aspx?dlg=true`) where SPFx extensions do not load.
+  The customizer therefore also observes every same-origin iframe it can reach
+  from the page and re-hooks them whenever they navigate.
+- The document-library panel renders its checkbox before React has attached its
+  handlers, so a single early click is dropped. After clicking, the customizer
+  verifies the state and retries with a short backoff (150 ms to 1.5 s).
 
 ## Build
 
@@ -51,6 +61,32 @@ npm start
 
 Then open the debug URL printed by the tool (it targets `_layouts/15/viewlsts.aspx`,
 the Site contents page) and create a list or library.
+
+## End-to-end proof
+
+`e2e/prove.js` is a headed Playwright script that opens Site contents on a site
+with the app installed, walks **New → List** and **New → Document library**, and
+asserts the checkbox is unchecked. It then repeats on a control site without the
+app and asserts the checkbox is checked. Screenshots land in `docs/proof/`.
+
+```bash
+npx playwright install chromium
+TEST_SITE=https://tenant.sharepoint.com/sites/WithApp \
+CONTROL_SITE=https://tenant.sharepoint.com \
+npm run e2e
+```
+
+Sign in once in the browser window; the profile persists in `~/.cache/pw-sp-profile`.
+If you run behind an authenticating HTTP proxy, set `HTTPS_PROXY` and the script
+passes it to the browser.
+
+Last verified 2026-09-10 on tenant g53.sharepoint.com (site `/sites/UncheckNavTest`,
+package version 1.0.0.1): `PROOF: PASS`.
+
+| Scenario | List | Document library |
+|----------|------|------------------|
+| Site with app | unchecked | unchecked |
+| Control site without app | checked | checked |
 
 ## Caveats
 

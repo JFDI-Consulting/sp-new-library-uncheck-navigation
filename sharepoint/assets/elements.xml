@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Elements xmlns="http://schemas.microsoft.com/sharepoint/">
+    <CustomAction
+        Title="UncheckSiteNavigation"
+        Location="ClientSideExtension.ApplicationCustomizer"
+        ClientSideComponentId="d31c6f18-3a0d-462b-b677-c09314fbf3e6"
+        ClientSideComponentProperties="{&quot;debug&quot;:false}">
+    </CustomAction>
+</Elements>

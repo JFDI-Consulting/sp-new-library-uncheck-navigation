@@ -1,0 +1,45 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "sp-new-library-uncheck-navigation-client-side-solution",
+    "id": "3d32ef0c-4b53-4eb9-b342-10def9451d2e",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": ""
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Defaults \"Show in site navigation\" to unchecked when creating lists and libraries."
+      },
+      "longDescription": {
+        "default": "Application Customizer that unticks the \"Show in site navigation\" checkbox in the modern Create list / Create document library panels, so new lists and libraries are not added to the site navigation by default."
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "Application Extension - Deployment of custom action",
+        "description": "Deploys a custom action with ClientSideComponentId association",
+        "id": "e6602822-7c77-48e1-8717-ddaa9fc4218a",
+        "version": "1.0.0.0",
+        "assets": {
+          "elementManifests": [
+            "elements.xml",
+            "ClientSideInstance.xml"
+          ]
+        }
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/sp-new-library-uncheck-navigation.sppkg"
+  }
+}

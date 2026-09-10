@@ -1,0 +1,23 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "sp-new-library-uncheck-navigation",
+    "environment": "spo",
+    "skipFeatureDeployment": false,
+    "useGulp": false,
+    "componentType": "extension",
+    "extensionType": "ApplicationCustomizer",
+    "componentName": "UncheckSiteNavigation",
+    "componentDescription": "Defaults 'Show in site navigation' to unchecked when creating lists and libraries",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.17.1",
+    "sdksVersions": {},
+    "version": "1.23.2",
+    "libraryName": "sp-new-library-uncheck-navigation",
+    "libraryId": "3d32ef0c-4b53-4eb9-b342-10def9451d2e",
+    "packageManager": "npm",
+    "solutionShortDescription": "sp-new-library-uncheck-navigation description",
+    "isDomainIsolated": false
+  }
+}

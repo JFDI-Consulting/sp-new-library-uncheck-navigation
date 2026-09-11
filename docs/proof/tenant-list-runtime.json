@@ -1,0 +1,98 @@
+{
+  "startedAt": "2026-09-11T13:24:02.969Z",
+  "title": "UncheckNavigationProof1789133042969",
+  "sites": [
+    {
+      "web": "https://g53.sharepoint.com",
+      "installedApp": false,
+      "directActions": 0,
+      "bars": 1,
+      "checked": false,
+      "attempts": [
+        {
+          "attempt": 1,
+          "shown": false
+        },
+        {
+          "attempt": 2,
+          "shown": true
+        }
+      ],
+      "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/tenant-root-list.png"
+    },
+    {
+      "web": "https://g53.sharepoint.com/sites/UncheckNavTest",
+      "installedApp": false,
+      "directActions": 0,
+      "bars": 1,
+      "checked": false,
+      "attempts": [
+        {
+          "attempt": 1,
+          "shown": true
+        }
+      ],
+      "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/tenant-test-list.png"
+    }
+  ],
+  "originalAction": {
+    "ClientSideComponentId": "d31c6f18-3a0d-462b-b677-c09314fbf3e6",
+    "ClientSideComponentProperties": "{\"debug\":false,\"enabled\":true}",
+    "CommandUIExtension": null,
+    "Description": null,
+    "Group": null,
+    "HostProperties": "",
+    "Id": "fb7f6d2f-88d8-4b18-b83a-691fcb7ed7fa",
+    "ImageUrl": null,
+    "Location": "ClientSideExtension.ApplicationCustomizer",
+    "Name": "UncheckSiteNavigation",
+    "RegistrationId": null,
+    "RegistrationType": 0,
+    "Rights": {
+      "High": 0,
+      "Low": 0
+    },
+    "Scope": 3,
+    "ScriptBlock": null,
+    "ScriptSrc": null,
+    "Sequence": 0,
+    "Title": "UncheckSiteNavigation",
+    "Url": null,
+    "VersionOfUserCustomAction": "16.0.1.0"
+  },
+  "registrationMode": "explicit CLI after redeploy of existing solution version",
+  "tenantRegistration": {
+    "FileSystemObjectType": 0,
+    "Id": 1,
+    "ServerRedirectedEmbedUri": null,
+    "ServerRedirectedEmbedUrl": "",
+    "ContentTypeId": "0x001F1EB83086D194468ACD86EE21DF0147",
+    "Title": "UncheckNavigationProof1789133042969",
+    "Modified": "2026-09-11T13:24:22Z",
+    "Created": "2026-09-11T13:24:22Z",
+    "AuthorId": 7,
+    "EditorId": 7,
+    "OData__UIVersionString": "1.0",
+    "Attachments": false,
+    "GUID": "85fb39e7-8400-458d-9973-29757d32eed0",
+    "OData__ColorTag": null,
+    "ComplianceAssetId": null,
+    "TenantWideExtensionComponentId": "d31c6f18-3a0d-462b-b677-c09314fbf3e6",
+    "TenantWideExtensionComponentProperties": "{\"debug\":false}",
+    "TenantWideExtensionWebTemplate": null,
+    "TenantWideExtensionListTemplate": 0,
+    "TenantWideExtensionLocation": "ClientSideExtension.ApplicationCustomizer",
+    "TenantWideExtensionSequence": 0,
+    "TenantWideExtensionHostProperties": null,
+    "TenantWideExtensionDisabled": false
+  },
+  "loadedBundles": [
+    "https://g53.sharepoint.com/sites/appcatalog/ClientSideAssets/3d32ef0c-4b53-4eb9-b342-10def9451d2e/uncheck-site-navigation-application-customizer_0bfd49506da67191394a.js",
+    "https://g53.sharepoint.com/sites/appcatalog/ClientSideAssets/3d32ef0c-4b53-4eb9-b342-10def9451d2e/uncheck-site-navigation-application-customizer_0bfd49506da67191394a.js"
+  ],
+  "expectedBundle": "uncheck-site-navigation-application-customizer_0bfd49506da67191394a.js",
+  "pass": true,
+  "restoredPilotId": "5e410941-e129-4fb4-8787-4b238d9300b6",
+  "cleanupVerified": true,
+  "completedAt": "2026-09-11T13:25:12.269Z"
+}

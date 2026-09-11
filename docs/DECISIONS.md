@@ -10,6 +10,7 @@ reverse one, re-run the experiment first; the platform behaviour may have moved.
 - [ADR-004: Per-site install, not tenant-wide deployment (for now)](#adr-004-per-site-install-not-tenant-wide-deployment-for-now)
 - [ADR-005: Lazy-load the settings UI](#adr-005-lazy-load-the-settings-ui)
 - [ADR-006: Headed Playwright against a real tenant as the test of record](#adr-006-headed-playwright-against-a-real-tenant-as-the-test-of-record)
+- [ADR-007: Hidden web-local list with a 60-second session cache](#adr-007-hidden-web-local-list-with-a-60-second-session-cache)
 
 ---
 
@@ -42,7 +43,8 @@ create panel.
 
 ## ADR-002: Store the per-site switch in the custom action's properties
 
-**Status:** accepted, 2026-09-10.
+**Status:** superseded by ADR-007 on 2026-09-11. The following records the
+original 2026-09-10 storage decision.
 
 **Context.** The switch must be per site, writable by site owners from the
 browser, and must not require custom script (default modern sites are
@@ -115,7 +117,8 @@ web part (needs provisioning on every site); enabling custom script.
 
 ## ADR-004: Per-site install, not tenant-wide deployment (for now)
 
-**Status:** accepted, 2026-09-10; explicitly deferred by the product owner.
+**Status:** superseded by ADR-007 on 2026-09-11. The following records the
+original 2026-09-10 deployment restriction.
 
 **Context.** Tenant-wide deployment (`skipFeatureDeployment: true`, "Make this
 solution available to all sites") would apply the customizer to every existing
@@ -136,6 +139,12 @@ list as enabled. This works in both modes, survives reinstalls, and keeps
 owners-only control. Keep `enabled` on the custom action as an admin override
 for per-site mode, with the list winning when present.
 
+**2026-09-11 implementation follow-up.** [HIDDEN-LIST-DESIGN.md](HIDDEN-LIST-DESIGN.md)
+and ADR-007 replace this restriction. The package now uses a hidden per-web list
+with a 60-second session cache and supports tenant-wide deployment. See the
+[verification report](LIST-SETTINGS-VERIFICATION.md) for live NoScript and
+registration evidence.
+
 **Rejected.** Site designs with `installSolution` (new sites only); scripted
 bulk install (misses future sites); site-created custom action (would load the
 customizer twice in tenant-wide mode).
@@ -154,8 +163,9 @@ owners see on one page.
 **Decision.** The customizer keeps only `sp-core-library`, `sp-application-base`,
 `sp-page-context`, `sp-http` and `SettingsService` as static imports. The UI is
 loaded with `import('./SettingsUi')` after the route and permission checks pass.
-Measured: main bundle 16 KB, settings chunk 3 KB, vendor chunk 238 KB loaded only
-on Site contents for owners.
+Initial measurements: main bundle 16 KB, settings chunk 3 KB, vendor chunk
+238 KB loaded only on Site contents for owners. With ADR-007 storage, the entry
+bundle is 30,054 bytes; React and Fluent remain dynamically loaded.
 
 **Consequences.** One extra request on Site contents for owners. The
 `_syncSettingsUi` flow has to guard against a placeholder being disposed while
@@ -179,5 +189,34 @@ screenshots in `docs/proof/` is the acceptance evidence for a release.
 
 **Consequences.** Needs a display, a tenant, and a human sign-in once. The
 proof is subject to tenant flakiness (one 30 s locator timeout was observed in
-an otherwise passing run); rerun before treating a failure as real. Jest remains
-in the build for lint-level checks only.
+an otherwise passing run); rerun before treating a failure as real.
+
+**2026-09-11 update.** The proof also supports headless runs with authenticated
+fresh browser contexts. Fourteen Jest tests now cover storage, caching and
+lifecycle races; the real-tenant proof remains necessary for SharePoint UI and
+registration behavior.
+
+
+## ADR-007: Hidden web-local list with a 60-second session cache
+
+**Status:** accepted, 2026-09-11. **Supersedes:** ADR-002 storage and ADR-004
+deployment restriction.
+
+The toggle now uses `Lists/JfdiUnavSettings`, created only on the first owner
+Save. The list has unique permissions: Owners Full Control and associated
+Members/Visitors Read. Explicit list writers are supported; Manage Web alone
+is not a write grant. NoScript remains enabled.
+
+One asynchronous read gates checkbox mutation. Valid values and known absence
+are cached for 60 seconds per web/user in sessionStorage. Panel opening bypasses
+the cache; ETags prevent lost updates. Read failures leave SharePoint's default
+unchanged. Existing registration `enabled` values remain absent-list defaults
+until migrated; the list takes precedence thereafter.
+
+Tenant deployment is supported through `skipFeatureDeployment` and the packaged
+`ClientSideInstance.xml`. Standard tenant deployment provisions its Tenant Wide
+Extensions entry. Migration must precede activation, and administrators should
+check for duplicate registrations after deployment. Omitting the instance XML
+was tested and rejected: M365 CLI then reports that the solution contains no
+tenant-deployable extension. See [operations](OPERATIONS.md) and
+[design](HIDDEN-LIST-DESIGN.md).

@@ -26,9 +26,8 @@ export interface IUncheckSiteNavigationApplicationCustomizerProperties {
   /** Emit verbose console logging. */
   debug?: boolean;
   /**
-   * Switch the behaviour on or off for this site. Absent means on. Site
-   * owners can change this from the settings panel on Site contents; it is
-   * stored back into this same property on the custom action.
+   * Legacy default used only until this web has a hidden-list setting.
+   * The settings panel stores overrides independently of the registration.
    */
   enabled?: boolean;
 }
@@ -68,7 +67,12 @@ export default class UncheckSiteNavigationApplicationCustomizer
   private _labels: string[] = [];
   private _scanScheduled: boolean = false;
   private _disposed: boolean = false;
-  private _enabled: boolean = true;
+  private _enabled: boolean = false;
+  private _settingsLoaded: boolean = false;
+  private _settingsError: string | undefined;
+  private _service: SettingsService | undefined;
+  private _serviceKey: string = '';
+  private _settingsGeneration: number = 0;
   private _topPlaceholder: PlaceholderContent | undefined;
   private _settingsUi: ISettingsUiHandle | undefined;
   private _mounting: boolean = false;
@@ -79,8 +83,7 @@ export default class UncheckSiteNavigationApplicationCustomizer
     const configured: string[] | undefined = this.properties && this.properties.labels;
     const source: string[] = Array.isArray(configured) && configured.length > 0 ? configured : DEFAULT_LABELS;
     this._labels = source.map(this._normalise).filter((l: string) => l.length > 0);
-    this._enabled = SettingsService.isEnabled(this.properties);
-    this._log(`Enabled: ${this._enabled}`);
+
 
     if (typeof MutationObserver === 'undefined' || !document.body) {
       Log.warn(LOG_SOURCE, 'MutationObserver or document.body unavailable; customizer inactive.');
@@ -92,9 +95,9 @@ export default class UncheckSiteNavigationApplicationCustomizer
 
     // Modern SharePoint navigates client-side without re-running onInit, so
     // the settings UI has to follow route and placeholder changes.
-    this.context.application.navigatedEvent.add(this, this._syncSettingsUi);
+    this.context.application.navigatedEvent.add(this, this._refreshSettings);
     this.context.placeholderProvider.changedEvent.add(this, this._syncSettingsUi);
-    this._syncSettingsUi();
+    this._refreshSettings();
 
     return Promise.resolve();
   }
@@ -105,10 +108,42 @@ export default class UncheckSiteNavigationApplicationCustomizer
       o.disconnect();
     }
     this._observers = [];
-    this.context.application.navigatedEvent.remove(this, this._syncSettingsUi);
+    this.context.application.navigatedEvent.remove(this, this._refreshSettings);
+    this._settingsGeneration++;
     this.context.placeholderProvider.changedEvent.remove(this, this._syncSettingsUi);
     this._unmountSettingsUi();
     super.onDispose();
+  }
+
+  /** Resolve settings outside the scan loop; old-web and disposed responses cannot apply. */
+  private _refreshSettings(): void {
+    if (this._disposed) { return; }
+    const generation: number = ++this._settingsGeneration;
+    this._enabled = false;
+    this._settingsLoaded = false;
+    this._settingsError = undefined;
+    this._unmountSettingsUi();
+    const webUrl: string = this.context.pageContext.web.absoluteUrl;
+    const userKey: string = this.context.pageContext.user.loginName;
+    const serviceKey: string = `${webUrl}|${userKey}`;
+    if (!this._service || this._serviceKey !== serviceKey) {
+      this._service = new SettingsService(this.context.spHttpClient, webUrl, userKey, this.properties.enabled !== false);
+      this._serviceKey = serviceKey;
+    }
+    const service: SettingsService = this._service;
+    service.getEnabled().then((enabled: boolean) => {
+      if (this._disposed || generation !== this._settingsGeneration) { return; }
+      this._enabled = enabled;
+      this._settingsLoaded = true;
+      this._scheduleScan();
+      this._syncSettingsUi();
+    }).catch((error: Error) => {
+      if (this._disposed || generation !== this._settingsGeneration) { return; }
+      this._settingsError = error.message;
+      this._settingsLoaded = true;
+      Log.error(LOG_SOURCE, error);
+      this._syncSettingsUi();
+    });
   }
 
   /**
@@ -122,7 +157,7 @@ export default class UncheckSiteNavigationApplicationCustomizer
    * customizer cannot run, and NoScript sites refuse Site Settings links.
    */
   private _syncSettingsUi(): void {
-    if (this._disposed) {
+    if (this._disposed || !this._settingsLoaded || !this._service) {
       return;
     }
     if (!SITE_CONTENTS_PATH.test(window.location.pathname)) {
@@ -146,21 +181,38 @@ export default class UncheckSiteNavigationApplicationCustomizer
     this._topPlaceholder = placeholder;
     this._mounting = true;
 
-    const service: SettingsService = new SettingsService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl);
+    const service: SettingsService = this._service;
     // React and Fluent UI live in a separate chunk so every other page load
     // pays nothing for a feature only site owners see on Site contents.
-    import(/* webpackChunkName: 'uncheck-nav-settings' */ './SettingsUi')
-      .then((mod) => {
-        this._mounting = false;
+    Promise.all([import(/* webpackChunkName: 'uncheck-nav-settings' */ './SettingsUi'), service.canEdit()])
+      .then(([mod, canEdit]) => {
         if (this._disposed || this._topPlaceholder !== placeholder) {
           return;
         }
+        this._mounting = false;
         this._settingsUi = mod.renderSettingsUi(placeholder.domElement, {
           enabled: this._enabled,
-          canEdit: canManage,
+          canEdit: canEdit,
+          showBar: canManage,
+          loadError: this._settingsError,
+          onOpen: async (): Promise<{ enabled: boolean; needsSave: boolean }> => {
+            let enabled: boolean;
+            try {
+              enabled = await service.getEnabled(true);
+            } catch (error) {
+              if (this._service === service) { this._enabled = false; }
+              throw error;
+            }
+            if (this._service === service && !this._disposed) {
+              this._enabled = enabled;
+              this._scheduleScan();
+            }
+            return { enabled, needsSave: service.needsProvisioning() };
+          },
           openOnMount: requested,
           onSave: async (enabled: boolean): Promise<void> => {
             await service.setEnabled(enabled);
+            if (this._service !== service || this._disposed) { return; }
             this._enabled = enabled;
             this._log(`Setting saved: enabled=${enabled}`);
             this._scheduleScan();
@@ -171,12 +223,14 @@ export default class UncheckSiteNavigationApplicationCustomizer
         }
       })
       .catch((e: Error) => {
+        if (this._topPlaceholder !== placeholder || this._disposed) { return; }
         this._mounting = false;
         Log.error(LOG_SOURCE, e);
       });
   }
 
   private _unmountSettingsUi(): void {
+    this._mounting = false;
     if (this._settingsUi) {
       this._settingsUi.unmount();
       this._settingsUi = undefined;
@@ -307,8 +361,9 @@ export default class UncheckSiteNavigationApplicationCustomizer
       this._log(`"${label}" could not be unchecked after ${attempt + 1} attempts.`);
       return;
     }
+    const generation: number = this._settingsGeneration;
     window.setTimeout(() => {
-      if (this._disposed || !control.isConnected) {
+      if (this._disposed || generation !== this._settingsGeneration || !this._enabled || !control.isConnected) {
         return;
       }
       this._uncheck(control, label, attempt + 1);

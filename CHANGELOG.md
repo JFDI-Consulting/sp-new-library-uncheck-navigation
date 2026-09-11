@@ -2,6 +2,18 @@
 
 All notable changes to sp-new-library-uncheck-navigation are documented in this file.
 
+## [1.0.0.4] - 2026-09-11
+
+### Added
+
+- Hidden per-web settings list compatible with NoScript and tenant-level deployment.
+- A 60-second per-user/site session cache, fresh reads when opening settings,
+  and ETag-protected saves.
+- Owner-only provisioning, read access for associated Members/Visitors, and
+  permission-aware settings editing.
+- Browser proof for cached library loads, expiry, persisted disabled settings,
+  and failed reads that leave SharePoint defaults unchanged.
+
 ## [1.0.0.3] - 2026-09-10
 
 ### Added

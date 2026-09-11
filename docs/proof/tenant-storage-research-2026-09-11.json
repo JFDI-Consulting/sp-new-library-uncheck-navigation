@@ -1,0 +1,44 @@
+[
+  {
+    "label": "site exception true",
+    "exit": 0,
+    "stdout": "[\n  {\n    \"SchemaVersion\": \"15.0.0.0\",\n    \"LibraryVersion\": \"16.0.27626.12006\",\n    \"ErrorInfo\": null,\n    \"TraceCorrelationId\": \"9b253aa2-005d-3001-3ce5-ba9a857b78af\"\n  },\n  9,\n  {\n    \"IsNull\": false\n  },\n  11,\n  {\n    \"_ObjectType_\": \"Microsoft.Online.SharePoint.TenantAdministration.SpoOperation\",\n    \"_ObjectIdentity_\": \"94b1fd88-148e-4994-91a5-b256d6b38b38|908bed80-a04a-4433-b4a0-883d9847d110:94b1fd88-148e-4994-91a5-b256d6b38b38\\\\\\nSpoOperation\\\\\\nSetSite\\\\\\n639247220575206237\\\\\\nhttps%3a%2f%2fg53.sharepoint.com%2fsites%2fUncheckNavTest\\\\\\n00000000-0000-0000-0000-000000000000\",\n    \"HasTimedout\": false,\n    \"IsComplete\": true,\n    \"PollingInterval\": 15000\n  }\n]",
+    "stderr": ""
+  },
+  {
+    "label": "verify exception enabled",
+    "exit": 0,
+    "stdout": "{\n  \"NoScript\": 2,\n  \"PropertyBagException\": true\n}",
+    "stderr": ""
+  },
+  {
+    "label": "write web property",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "label": "read web property",
+    "exit": 0,
+    "stdout": "false",
+    "stderr": ""
+  },
+  {
+    "label": "remove test key",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "label": "site exception false",
+    "exit": 0,
+    "stdout": "[\n  {\n    \"SchemaVersion\": \"15.0.0.0\",\n    \"LibraryVersion\": \"16.0.27702.12005\",\n    \"ErrorInfo\": null,\n    \"TraceCorrelationId\": \"9d253aa2-e05f-2001-f604-26c734e9c48a\"\n  },\n  9,\n  {\n    \"IsNull\": false\n  },\n  11,\n  {\n    \"_ObjectType_\": \"Microsoft.Online.SharePoint.TenantAdministration.SpoOperation\",\n    \"_ObjectIdentity_\": \"94b1fd88-148e-4994-91a5-b256d6b38b38|908bed80-a04a-4433-b4a0-883d9847d110:94b1fd88-148e-4994-91a5-b256d6b38b38\\\\\\nSpoOperation\\\\\\nSetSite\\\\\\n639247220650369215\\\\\\nhttps%3a%2f%2fg53.sharepoint.com%2fsites%2fUncheckNavTest\\\\\\n00000000-0000-0000-0000-000000000000\",\n    \"HasTimedout\": false,\n    \"IsComplete\": true,\n    \"PollingInterval\": 15000\n  }\n]",
+    "stderr": ""
+  },
+  {
+    "label": "verify exception restored",
+    "exit": 0,
+    "stdout": "{\n  \"NoScript\": 2,\n  \"PropertyBagException\": false\n}",
+    "stderr": ""
+  }
+]

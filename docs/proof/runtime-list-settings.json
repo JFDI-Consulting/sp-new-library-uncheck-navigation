@@ -1,0 +1,109 @@
+{
+  "testSite": "https://g53.sharepoint.com/sites/UncheckNavTest",
+  "controlSite": "https://g53.sharepoint.com",
+  "headless": true,
+  "freshContext": true,
+  "startedAt": "2026-09-11T13:18:29.611Z",
+  "completedAt": "2026-09-11T13:19:58.161Z",
+  "initialState": {
+    "changed": false,
+    "saved": false,
+    "listWrites": [],
+    "customActionRequests": []
+  },
+  "withApp": {
+    "List": {
+      "label": "Show list in site navigation",
+      "checked": false,
+      "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/with-app-list.png"
+    },
+    "Document library": {
+      "label": "Show in site navigation",
+      "checked": false,
+      "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/with-app-document-library.png"
+    }
+  },
+  "control": {
+    "List": {
+      "label": "Show list in site navigation",
+      "checked": true,
+      "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/control-no-app-list.png"
+    },
+    "Document library": {
+      "label": "Show in site navigation",
+      "checked": true,
+      "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/control-no-app-document-library.png"
+    }
+  },
+  "settings": {
+    "whileDisabled": {
+      "List": {
+        "label": "Show list in site navigation",
+        "checked": true,
+        "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/with-app-disabled-list.png"
+      },
+      "Document library": {
+        "label": "Show in site navigation",
+        "checked": true,
+        "screenshot": "/home/joel/sp-new-library-uncheck-navigation/docs/proof/with-app-disabled-document-library.png"
+      }
+    },
+    "afterReenable": false,
+    "disableSave": {
+      "changed": true,
+      "saved": true,
+      "listWrites": [
+        {
+          "method": "POST",
+          "url": "https://g53.sharepoint.com/sites/UncheckNavTest/_api/web/GetList(@list)/items(1)?@list=%27%2Fsites%2FUncheckNavTest%2FLists%2FJfdiUnavSettings%27",
+          "startTime": 0
+        }
+      ],
+      "customActionRequests": []
+    },
+    "enableSave": {
+      "changed": true,
+      "saved": true,
+      "listWrites": [
+        {
+          "method": "POST",
+          "url": "https://g53.sharepoint.com/sites/UncheckNavTest/_api/web/GetList(@list)/items(1)?@list=%27%2Fsites%2FUncheckNavTest%2FLists%2FJfdiUnavSettings%27",
+          "startTime": 0
+        }
+      ],
+      "customActionRequests": []
+    }
+  },
+  "cache": {
+    "key": "jfdi-unav:settings:v1:https%3A%2F%2Fg53.sharepoint.com%2Fsites%2Funchecknavtest:jjadmin%40g53.onmicrosoft.com",
+    "cold": {
+      "status": 200,
+      "reads": 1,
+      "durationMs": 76.633,
+      "cached": {
+        "expiresAt": 1789132833868,
+        "enabled": true
+      }
+    },
+    "libraryReload": {
+      "reads": 0
+    },
+    "expiry": {
+      "forced": 1789132777269,
+      "status": 200,
+      "reads": 1,
+      "durationMs": 83.478
+    }
+  },
+  "partialNav": {
+    "onHome": false,
+    "onSiteContents": true,
+    "backOnHome": false
+  },
+  "failClosed": {
+    "interceptedReads": 2,
+    "checked": true,
+    "recoveryStatus": 200
+  },
+  "pass": true
+}

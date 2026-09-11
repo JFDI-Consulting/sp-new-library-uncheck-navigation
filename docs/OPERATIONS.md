@@ -1,154 +1,219 @@
 # Operations runbook
 
-For tenant admins and site admins deploying, configuring and supporting the
-customizer. Commands use [CLI for Microsoft 365](https://pnp.github.io/cli-microsoft365/)
-(`m365`), signed in as a SharePoint admin. PnP PowerShell equivalents exist for
-every step.
+For tenant administrators and site owners deploying and operating the customizer.
+Commands use [CLI for Microsoft 365](https://pnp.github.io/cli-microsoft365/)
+(`m365`), signed in as a SharePoint administrator.
 
-## What it does, in one paragraph
+## What it does
 
-On sites where the app is installed, the "Show in site navigation" box in the
-modern *Create list* and *Create document library* panels starts **unticked**.
-Users can still tick it. Site owners can switch the behaviour off and on per
-site from a status bar on **Site contents**. Nothing is installed on users'
-machines; nothing runs outside the browser; no custom script is required.
+The centrally deployed customizer unticks **Show in site navigation** in modern
+Create list and Create document library panels. Site owners can override that
+default per web on Site contents. The setting is stored in a hidden SharePoint
+list, so it works on NoScript sites and survives app updates and reinstalls.
 
 ## Requirements
 
-- SharePoint Online, modern sites. Classic pages are unaffected.
-- Tenant App Catalog (or a site collection App Catalog).
-- To install on a site: site collection admin or site owner with permission to
-  add apps. To use the switch: *Manage Web* (site owners).
-- Tenant UI language: English out of the box. Other languages need the `labels`
-  property set (see [Configuration](#configuration)).
+- SharePoint Online and modern pages. Classic pages are unaffected.
+- Tenant App Catalog and a SharePoint administrator for deployment and tenant
+  registration.
+- No custom script or API permission is required.
+- The first user to save an override must be able to create and secure a list.
+  An associated Owners-group member with Full Control normally has this
+  permission. Manage Web alone does not necessarily permit list creation or
+  permission changes.
 
-## Install
+## Migrate existing disabled sites
 
-```bash
-# 1. Upload the package from the GitHub Release and deploy it (do NOT tick "make available to all sites")
-m365 spo app add --filePath sp-new-library-uncheck-navigation.sppkg --overwrite
-m365 spo app list                                  # note the ID (a GUID) for the next steps
-m365 spo app deploy --id <app-id>
+Before the tenant-wide deployment, preserve every existing per-site
+custom-action `enabled:false` override. While a web has no settings list, that
+legacy property remains its default. On every explicitly disabled site, open the
+settings panel and Save its current false value. The panel provisions the hidden
+list even when the value has not changed.
 
-# 2. Add it to a site collection
-m365 spo app install --id <app-id> --siteUrl https://tenant.sharepoint.com/sites/YourSite
-```
+This migration must finish before deploying the tenant-wide package. Otherwise,
+a site whose legacy action is removed can temporarily fall back to enabled.
+Preserve any `labels` and `debug` configuration separately: those become the
+properties in the tenant-wide registration.
 
-Installation takes 10 to 60 seconds. Verify:
+## Deploy and automatically activate tenant-wide
 
-```bash
-m365 spo app instance list --siteUrl https://tenant.sharepoint.com/sites/YourSite   # AppStatus 4 = Installed
-m365 spo customaction list --webUrl https://tenant.sharepoint.com/sites/YourSite \
-  --output json | grep -E '"(Title|ClientSideComponentId|ClientSideComponentProperties)"'
-```
+The package has `skipFeatureDeployment: true` and includes
+`ClientSideInstance.xml`. SharePoint uses that manifest to create the Tenant Wide
+Extensions registration automatically when the package is deployed with
+`--skipFeatureDeployment`. This is the standard SPFx extension deployment path.
 
-You should see one action titled `UncheckSiteNavigation` with component id
-`d31c6f18-3a0d-462b-b677-c09314fbf3e6`. Then open Site contents as a site owner:
-the status bar appears at the top, and **New → List** shows the box unticked.
-
-## Upgrade
-
-```bash
-m365 spo app add --filePath sp-new-library-uncheck-navigation.sppkg --overwrite
-m365 spo app deploy --id <app-id>
-m365 spo app upgrade --id <app-id> --siteUrl https://tenant.sharepoint.com/sites/YourSite
-```
-
-Repeat the last line per site, or script it over `m365 spo site list`. An
-upgrade **resets the custom action's properties to the package defaults**, so
-any site that had switched the behaviour off, or configured `labels`, will be
-back to defaults. Record per-site settings before a bulk upgrade if that
-matters (see [Reading and setting the switch by script](#reading-and-setting-the-switch-by-script)).
-
-Sites only pick up new assets when the solution version changes. Re-uploading
-the same version and running `upgrade` is a no-op; uninstall and install instead.
-
-## Remove
+Before changing the package, inventory both the legacy actions and the existing
+tenant registration rows. Save the exact IDs; do not remove by component ID when
+duplicates may exist.
 
 ```bash
-m365 spo app uninstall --id <app-id> --siteUrl https://tenant.sharepoint.com/sites/YourSite --force
+PACKAGE=sharepoint/solution/sp-new-library-uncheck-navigation.sppkg
+COMPONENT=d31c6f18-3a0d-462b-b677-c09314fbf3e6
+TEST_SITE=https://g53.sharepoint.com/sites/UncheckNavTest
+
+m365 spo applicationcustomizer list --webUrl "$TEST_SITE" --scope All --output json \
+  > /tmp/unav-test-actions-before.json
+m365 spo tenant applicationcustomizer list --output json \
+  > /tmp/unav-tenant-actions-before.json
+m365 spo tenant applicationcustomizer list --output json |
+  jq --arg component "$COMPONENT" \
+    '[.[] | select(.TenantWideExtensionComponentId == $component)]'
+
+# Upload the final package only after the old test/pilot action is removed.
+m365 spo app add --filePath "$PACKAGE" --overwrite
+m365 spo app list --output json       # identify and inspect the exact app ID
+m365 spo app deploy --id <app-id> --skipFeatureDeployment
 ```
 
-Removing the app deletes its custom action, and the create panels return to
-SharePoint's standard. Retracting from the catalog (`m365 spo app retract`)
-removes it everywhere at once.
+If redeploying an already deployed solution version leaves no entry, confirm the
+catalog reports `ContainsTenantWideExtension: true`, then register it explicitly:
+
+```bash
+m365 spo tenant applicationcustomizer add --title UncheckSiteNavigation \
+  --clientSideComponentId "$COMPONENT" \
+  --clientSideComponentProperties '{"debug":false}'
+```
+
+Run that only after confirming there are zero matching entries. This was needed
+in the development tenant when the same version was first deployed without its
+instance XML and then corrected; the CLI rejected registration until the XML
+was restored to the package.
+
+The final list query must show one enabled row with the component ID, location
+`ClientSideExtension.ApplicationCustomizer`, and the expected properties. The
+first Tenant Wide Extensions registration can take up to 20 minutes to apply.
+
+```bash
+m365 spo tenant applicationcustomizer list --output json |
+  jq --arg component "$COMPONENT" \
+    '[.[] | select(.TenantWideExtensionComponentId == $component)]'
+```
+
+Package updates can create duplicate Tenant Wide Extensions entries. After every
+deploy, inventory rows again and retain exactly one intended enabled entry. If an
+extra row was created, resolve its list-item `Id` from the inventory and remove
+only that row:
+
+```bash
+m365 spo tenant applicationcustomizer remove --id <extra-tenant-extension-list-item-id> --force
+```
+
+Do not use `WebTemplate`, `Disabled`, or `HostProperties` to make a site-specific
+test registration. Tenant Wide Extensions cannot target a SiteId or WebId;
+`WebTemplate` applies to every matching web, `Disabled` disables the whole row,
+and placeholder preallocation would leave unused space on pages other than Site
+contents.
+
+## Per-web setting, permissions and cache
+
+The first authorized Save creates `Lists/JfdiUnavSettings` in that web. Normal
+page loads never create a list. When the list is confirmed absent, the customizer
+uses the registration's legacy/default `enabled` value, which defaults to true.
+
+| Item | Value |
+|---|---|
+| List visibility | Hidden, not crawled, not in Quick Launch |
+| Canonical row | `Title=configuration` |
+| Identity marker | `JfdiUnavStoreId=d31c6f18-3a0d-462b-b677-c09314fbf3e6` |
+| Setting | `Enabled` Boolean |
+| History | SharePoint list version history |
+
+The list breaks inherited permissions. Associated Owners receive Full Control;
+associated Members and Visitors receive Read; the item inherits those
+permissions. Other intended reader principals need explicit Read. Hiding a list,
+`WriteSecurity`, or an Everyone-except-external-users grant does not provide the
+required owners-only write boundary.
+
+The customizer reads asynchronously, deduplicates requests within a page, and
+keeps a 60-second per-user/per-web `sessionStorage` cache. Its cache key starts
+`jfdi-unav:settings:v1:` and contains the encoded lower-case web URL and encoded login name.
+It revalidates on relevant navigation and when the settings panel opens; it does
+not refresh merely because the tab gains focus. A successful Save updates the
+writer's cache. A confirmed absent list uses the default. A 403,
+malformed/duplicate row, throttling or server failure fails closed: SharePoint's
+checkbox remains unchanged and Site contents shows an error.
+
+When a web acquires direct reader grants or new web groups after inheritance has
+been broken, repair intended reader access without restoring inherited writes:
+
+```bash
+node scripts/grant-settings-readers.js \
+  https://g53.sharepoint.com/sites/UncheckNavTest \
+  <principal-id> [<principal-id>...]
+```
+
+With no principal IDs, the script targets associated Members and Visitors. It
+validates the hidden list, canonical row and identity marker before adding Read;
+it does not alter Owners or writer assignments.
 
 ## Configuration
 
-The custom action's `ClientSideComponentProperties` JSON holds three optional keys:
+Tenant registration properties configure labels and diagnostics. They are not the
+per-web setting store.
 
-| Key | Default | Meaning |
-|-----|---------|---------|
-| `enabled` | `true` | `false` switches the behaviour off for the site. The settings panel writes this. |
-| `labels` | English label texts | Accessible label texts to match, case-insensitive. Add the localised text on non-English tenants, e.g. `"Im Websitenavigation anzeigen"`. |
-| `debug` | `false` | Log matches and setting changes to the browser console (F12). |
+| Property | Default | Meaning |
+|---|---:|---|
+| `labels` | English label texts | Accessible names to match, case-insensitive |
+| `debug` | `false` | Browser-console diagnostics |
+| `enabled` | `true` | Default only while this web has no settings list |
 
-### Reading and setting the switch by script
+For a non-English tenant, update the exact tenant extension row and preserve
+every required property.
 
 ```bash
-SITE=https://tenant.sharepoint.com/sites/YourSite
-ID=$(m365 spo customaction list --webUrl $SITE --output json \
-     | jq -r '.[] | select(.ClientSideComponentId=="d31c6f18-3a0d-462b-b677-c09314fbf3e6") | .Id')
-
-# read
-m365 spo customaction get --webUrl $SITE --id $ID --output json | jq -r .ClientSideComponentProperties
-
-# switch off, keeping other keys
-m365 spo customaction set --webUrl $SITE --id $ID \
-  --clientSideComponentProperties '{"enabled":false}'
-
-# German tenant
-m365 spo customaction set --webUrl $SITE --id $ID \
-  --clientSideComponentProperties '{"labels":["Im Websitenavigation anzeigen","In der Websitenavigation anzeigen"]}'
+m365 spo tenant applicationcustomizer set --id <tenant-extension-list-item-id> \
+  --clientSideComponentProperties \
+  '{"labels":["Im Websitenavigation anzeigen","In der Websitenavigation anzeigen"],"debug":false}'
 ```
 
-`customaction set` replaces the whole JSON, so include every key you want to
-keep. The in-page panel merges instead.
+## User experience
 
-## What site owners see
-
-- **Site contents**, top of page: a grey one-line bar: "This site is set to
-  untick 'Show in site navigation' for new lists and libraries." (or the
-  SharePoint-standard wording when off) with a **Change** link.
-- Clicking **Change** opens a right-hand panel with one toggle and Save/Cancel.
-- Deep link for help pages: `<site>/_layouts/15/viewlsts.aspx?jfdiUncheckNav=settings`.
-- Members do not see the bar. If they open the deep link they get a read-only
-  panel with a notice.
-
-Changes apply immediately in the saving user's tab and within a few minutes for
-everyone else (SharePoint caches page configuration).
+- On **Site contents**, a user with Manage Web sees the status bar and
+  **Change**. The panel becomes editable only when that user can edit the
+  settings list (or can provision it on a web where it is absent).
+- Opening the panel re-reads the current value. Save uses an ETag, so a
+  concurrent owner change is reported instead of silently overwritten.
+- The deep link is
+  `<site>/_layouts/15/viewlsts.aspx?jfdiUncheckNav=settings`.
+- Users without list-write permission get a read-only panel.
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Check / fix |
-|---------|--------------|-------------|
-| Box is still ticked on a site with the app | Switched off in the panel; or non-English UI with default `labels`; or app not actually installed | Open Site contents as an owner and read the bar. Check `labels`. `m365 spo app instance list` shows `AppStatus` 4. |
-| Box ticked in *Document library* only, briefly | Normal: the library panel needs the retry (up to 1.5 s). If it stays ticked, Microsoft may have changed the control | Set `debug:true`, open F12, look for `[UncheckSiteNavigationApplicationCustomizer]` lines saying "could not be unchecked". Report with a screenshot. |
-| No status bar on Site contents | User lacks Manage Web; or page is not `viewlsts.aspx`; or Top placeholder failed | Confirm the user is a site owner. Hard-refresh. With `debug:true` the console logs placeholder waits. |
-| Save shows "You need to be a site owner" | 403 from SharePoint | Grant Manage Web (Owners group) or have an owner save. |
-| Save shows "custom action was not found" | App deployed tenant-wide, or action removed manually | This version must be installed per site. See [Tenant-wide deployment](#tenant-wide-deployment). |
-| Save shows "existing properties are not valid JSON" | Someone set malformed `ClientSideComponentProperties` by script | Fix with `customaction set` using valid JSON. |
-| `app install` leaves `AppStatus: 6` and no custom action | Install failed (package feature rejected) | Get the reason: `POST <site>/_api/web/GetAppInstanceById('<instance-id>')/GetErrorDetails` (instance id from `app instance list`, field `AppId`). Uninstall, fix, redeploy, install. |
-| `app deploy` says `ResourceNotFoundException` | Catalog still processing the upload, or the package failed validation | Wait 10 s and retry; check `IsValidAppPackage`/`AppPackageErrorMessage` on the "Apps for SharePoint" list item. |
-| Setting reverted after an upgrade | Expected: upgrade resets properties | Re-apply by script or in the panel. |
+| Symptom | Check / fix |
+|---|---|
+| Box remains ticked | Confirm one intended registration/action, the setting, labels, and browser console with `debug:true`. |
+| Box is unchanged and settings show an error | Validate list path, schema, marker, canonical row and list ACL. Do not take over or delete an unfamiliar list at the fixed path. |
+| Owner cannot save first override | Use an account that can create the list and manage permissions, or pre-provision it. |
+| Save reports a concurrent change | Reopen the panel, review the fresh value and save again. |
+| Reader gets a settings error | Add the intended principal with the reader-repair script; a list 403 deliberately fails closed. |
+| Extension runs twice | Remove the legacy per-site or pilot action. Keep exactly one tenant-wide registration. |
+| Tenant activation is not immediate | The first row can take up to 20 minutes. Recheck its exact list-item ID. |
 
-## Tenant-wide deployment
+The tenant proof verified ACL construction, administrator read/write, ETag
+conflicts, NoScript compatibility and cleanup. It did **not** include a login as
+an ordinary Member or Visitor because those groups were empty on the test site.
+Verify ordinary-reader access and writer denial before production rollout.
 
-Not supported by the current version. The package can technically be deployed
-to all sites (`skipFeatureDeployment`), and the customizer would run
-everywhere, but the per-site switch has nowhere to store its value in that mode
-and Save fails. If tenant-wide coverage is needed, ask for the hidden-list
-storage described in [DECISIONS.md, ADR-004](DECISIONS.md#adr-004-per-site-install-not-tenant-wide-deployment-for-now).
+## Remove
+
+Remove the tenant registration by exact list-item ID. This stops activation but
+intentionally retains independently created settings lists and their history.
+Delete a settings list only after identifying its web, backing up required
+history, and confirming it should return to the registration default.
+
+```bash
+m365 spo tenant applicationcustomizer remove --id <tenant-extension-list-item-id> --force
+```
+
+Retract the package only after the tenant registration is gone; retraction
+affects every consumer of the package.
 
 ## Security and compliance notes
 
-- The package contains only client-side code (TypeScript compiled to
-  JavaScript, React, Fluent UI). No server components, no external calls: the
-  only network requests are to the site's own `/_api/web/UserCustomActions`,
-  made with the signed-in user's permissions.
-- `requiresCustomScript` is false; nothing needs custom script enabled.
-- `isDomainIsolated` is false and no API permissions are requested, so the
-  package needs no approval in the API access page.
-- No telemetry, no storage outside SharePoint, no data leaves the tenant.
+- Configuration requests stay within the current SharePoint web; no data leaves
+  the tenant.
+- `requiresCustomScript` remains false and the setting store works on NoScript
+  sites.
+- The package has no API permissions and no telemetry.
 - Publisher: JFDI Consulting Ltd (MPN 2339010). Source, releases and changelog:
   https://github.com/JFDI-Consulting/sp-new-library-uncheck-navigation

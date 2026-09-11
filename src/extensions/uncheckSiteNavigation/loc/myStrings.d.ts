@@ -11,6 +11,16 @@ declare interface IUncheckSiteNavigationApplicationCustomizerStrings {
   ReadOnlyNotice: string;
   StatusEnabled: string;
   StatusDisabled: string;
+  SettingsUnavailable: string;
+  SettingsPermissionDenied: string;
+  SettingsInvalidResponse: string;
+  SettingsIncomplete: string;
+  SettingsConflict: string;
+  SettingsProvisionPermission: string;
+  SettingsStoreCollision: string;
+  SettingsAssociatedGroupsMissing: string;
+  SettingsPermissionsIncomplete: string;
+  SettingsRequestFailed: string;
 }
 
 declare module 'UncheckSiteNavigationApplicationCustomizerStrings' {

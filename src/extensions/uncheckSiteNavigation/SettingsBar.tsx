@@ -5,6 +5,8 @@ import * as strings from 'UncheckSiteNavigationApplicationCustomizerStrings';
 
 export interface ISettingsBarProps {
   enabled: boolean;
+  unavailable: boolean;
+  loading: boolean;
   onOpen: () => void;
 }
 
@@ -27,7 +29,7 @@ const barStyle: React.CSSProperties = {
 export const SettingsBar: React.FunctionComponent<ISettingsBarProps> = (props: ISettingsBarProps) => (
   <div style={barStyle} data-automation-id="jfdi-unav-bar">
     <Icon iconName="Settings" aria-hidden="true" />
-    <span role="status">{props.enabled ? strings.StatusEnabled : strings.StatusDisabled}</span>
-    <Link onClick={props.onOpen} data-automation-id="jfdi-unav-change">{strings.Change}</Link>
+    <span role="status">{props.unavailable ? strings.SettingsUnavailable : props.enabled ? strings.StatusEnabled : strings.StatusDisabled}</span>
+    <Link disabled={props.loading} onClick={props.onOpen} data-automation-id="jfdi-unav-change">{strings.Change}</Link>
   </div>
 );

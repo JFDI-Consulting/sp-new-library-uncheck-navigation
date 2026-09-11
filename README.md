@@ -34,66 +34,72 @@ landing page of your own:
 https://tenant.sharepoint.com/sites/YourSite/_layouts/15/viewlsts.aspx?jfdiUncheckNav=settings
 ```
 
-A change applies immediately in the tab that saved it. Other users and tabs pick
-it up on their next page load, once SharePoint's cached page data expires
-(typically a few minutes). Users without Manage Web who open the deep link get a
-read-only view of the panel.
+A change applies immediately in the saving tab. Other tabs and users refresh on
+navigation after their **60-second session cache** expires. Opening the panel
+always reads fresh settings. Users without settings-list write permission get
+a read-only panel through the deep link.
 
 ## Deploying
 
-1. Download the `.sppkg` from the latest [GitHub Release](https://github.com/JFDI-Consulting/sp-new-library-uncheck-navigation/releases).
-2. Upload it to the tenant App Catalog (or a site collection App Catalog) and deploy it.
-   Leave "Make this solution available to all sites" **unticked**; see
-   [Tenant-wide deployment](#tenant-wide-deployment) for why.
-3. Add the app to each site collection where you want the behaviour. Adding the
-   app activates a feature that registers the customizer's custom action on the
-   site.
-
-With CLI for Microsoft 365:
+The package supports tenant-level deployment with site-local settings on modern
+NoScript sites. Tenant-wide deployment registers the customizer for modern
+sites. No settings list is created until an owner first saves a change.
 
 ```bash
-m365 spo app add --filePath sp-new-library-uncheck-navigation.sppkg --overwrite
-m365 spo app deploy --id <app-id>
-m365 spo app install --id <app-id> --siteUrl https://tenant.sharepoint.com/sites/YourSite
-m365 spo app upgrade --id <app-id> --siteUrl https://tenant.sharepoint.com/sites/YourSite   # later versions
+m365 spo app add --filePath sharepoint/solution/sp-new-library-uncheck-navigation.sppkg --overwrite
+m365 spo app deploy --id <catalog-app-id> --skipFeatureDeployment
 ```
 
-To remove the behaviour, remove the app from the site, or switch it off from the
-settings panel. Full runbook, troubleshooting and CLI recipes for admin teams:
-[docs/OPERATIONS.md](docs/OPERATIONS.md).
+The App Catalog equivalent is **Make this solution available to all sites**.
+A per-site app installation is unnecessary. Deployment provisions a Tenant Wide
+Extensions entry; verify there is exactly one matching entry after upgrades.
+The [verification report](docs/LIST-SETTINGS-VERIFICATION.md) records the pilot and its cleanup.
+
+Before migrating existing installations, preserve explicit disabled settings
+in the hidden list and remove duplicate per-site registrations. Follow the
+[migration and deployment runbook](docs/OPERATIONS.md).
 
 ### Configuration
 
-The custom action accepts optional `ClientSideComponentProperties`:
+The extension registration accepts optional `ClientSideComponentProperties`:
 
 | Property  | Type       | Default | Purpose |
 |-----------|------------|---------|---------|
-| `enabled` | `boolean`  | `true`  | Switch the behaviour off for the site without removing the app. This is what the settings panel writes. |
+| `enabled` | `boolean` | `true` | Legacy/default value, used only when no settings list exists. The hidden-list value takes precedence. |
 | `labels`  | `string[]` | `["Show in site navigation", "Show list in site navigation", "Show library in site navigation"]` | Label texts to match (case-insensitive). **Required on non-English tenants**; add the localised label text. |
 | `debug`   | `boolean`  | `false` | Log each match and setting change to the browser console. |
 
-Defaults live in `sharepoint/assets/elements.xml`. To change them after
-deployment:
+Defaults live in `sharepoint/assets/ClientSideInstance.xml` (tenant registration)
+and `elements.xml` (per-site registration). For an existing tenant registration:
 
 ```bash
-m365 spo customaction list --webUrl https://tenant.sharepoint.com/sites/YourSite    # find the Id
-m365 spo customaction set --webUrl https://tenant.sharepoint.com/sites/YourSite \
-  --id <Id> --clientSideComponentProperties '{"enabled":false,"labels":["Im Websitenavigation anzeigen"]}'
+m365 spo tenant applicationcustomizer list --output json
+m365 spo tenant applicationcustomizer set --id <tenant-extension-item-id> \
+  --clientSideComponentProperties '{"debug":false,"labels":["Im Websitenavigation anzeigen"]}'
 ```
 
-The panel merges `enabled` into whatever is already stored, so `labels` and
-`debug` survive a toggle. A reinstall of the app resets the properties to the
-package defaults.
+Include all registration properties you want to retain when replacing that JSON.
+
+The panel stores `Enabled` in the hidden `Lists/JfdiUnavSettings` list, independently
+of these properties. Existing `labels` and `debug` are not rewritten by Save.
+The setting survives upgrades, reinstalls and removal of the app.
 
 ### Tenant-wide deployment
 
-The package ships `ClientSideInstance.xml`, so it *can* be deployed tenant-wide
-(every existing and future modern site) by setting `skipFeatureDeployment` and
-ticking "Make this solution available to all sites". **Do not do this with the
-current version.** In that mode there is no per-site custom action, so the
-settings panel has nothing to write to and Save fails with an explanatory
-message. A site-local store that works tenant-wide (a hidden settings list) is
-designed but not built; see [docs/DECISIONS.md](docs/DECISIONS.md#adr-004-per-site-install-not-tenant-wide-deployment-for-now).
+Tenant deployment and site settings are independent. Each web, including a
+subsite, can have its own hidden list. Owners have Full Control; associated
+Members and Visitors receive Read. Additional managers can be explicitly granted
+list edit permission. Manage Web alone does not override the list ACL; initial
+provisioning also requires Manage Lists and Manage Permissions.
+
+An uncached page makes one asynchronous settings read. Valid results, including
+an absent list, are cached per web and signed-in user for 60 seconds in
+`sessionStorage`. Storage-disabled browsers fall back to REST. A failed read
+leaves the SharePoint checkbox unchanged and is not cached. An existing empty
+or malformed settings list is an error, not the enabled default.
+
+See [the storage design](docs/HIDDEN-LIST-DESIGN.md) and
+[measured storage performance](docs/HIDDEN-LIST-PERFORMANCE.md).
 
 ### Why is the switch not on the Site Settings page?
 
@@ -147,21 +153,23 @@ the Site contents page) and create a list or library. `config/serve.json` sets
 
 ### End-to-end proof
 
-`e2e/prove.js` is a headed Playwright script that:
+`e2e/prove.js` is a Playwright script (headed or `HEADLESS=1`) that:
 
-1. opens Site contents on a site with the app installed, walks **New → List** and
+1. opens Site contents on a site with the customizer registered, walks **New → List** and
    **New → Document library**, and asserts the checkbox is unchecked;
-2. repeats on a control site without the app and asserts it is checked;
+2. repeats on a control site without a registration and asserts it is checked;
 3. uses the status bar to switch the customizer **off**, asserts the checkbox is
    then left checked, switches it back **on** through the deep link, and asserts
    it is unchecked again;
 4. reaches Site contents by client-side navigation from the home page and asserts
-   the status bar appears there and disappears again on leaving.
+   the status bar appears there and disappears again on leaving;
+5. verifies the real library cache, expiry and failed-read recovery.
 
 Screenshots land in `docs/proof/`.
 
 ```bash
 npx playwright install chromium
+# Set HEADLESS=1 when running without a display.
 TEST_SITE=https://tenant.sharepoint.com/sites/WithApp \
 CONTROL_SITE=https://tenant.sharepoint.com \
 npm run e2e
@@ -171,15 +179,19 @@ Sign in once in the browser window; the profile persists in `~/.cache/pw-sp-prof
 Behind an authenticating HTTP proxy, set `HTTPS_PROXY` and the script passes it
 to the browser.
 
-Last verified 2026-09-10 on tenant g53.sharepoint.com (site `/sites/UncheckNavTest`,
-package version 1.0.0.3): `PROOF: PASS`.
+Last verified 2026-09-11 on tenant g53.sharepoint.com (site `/sites/UncheckNavTest`,
+package version 1.0.0.4): `PROOF: PASS`. [Runtime evidence](docs/proof/runtime-list-settings.json)
+records a 77 ms cold settings read, zero settings requests on the cached library
+reload, and an 83 ms refresh after expiry. All 14 Jest tests and the production
+build passed. Tenant-wide activation also passed on two sites without per-site
+app installations; see the [verification report](docs/LIST-SETTINGS-VERIFICATION.md).
 
 | Scenario | List | Document library |
 |----------|------|------------------|
-| Site with app | unchecked | unchecked |
-| Control site without app | checked | checked |
-| Site with app, switched off in the panel | checked | (not exercised) |
-| Site with app, switched back on via deep link | unchecked | (not exercised) |
+| Site using centrally deployed assets | unchecked | unchecked |
+| Control site without registration | checked | checked |
+| Site switched off in the panel, after reload | checked | checked |
+| Site switched back on via deep link | unchecked | (not exercised) |
 | Status bar via client-side navigation | shown on Site contents, hidden elsewhere | |
 
 The proof occasionally hits a 30-second locator timeout on the tenant; rerun
@@ -196,11 +208,13 @@ before treating a failure as real.
   matches nothing; the status bar reports the setting, not whether a match has
   happened.
 - The settings bar only appears on Site contents and only to users who can
-  manage the web. Saving needs the same permission.
+  manage the web. Saving also requires settings-list edit permission; first Save requires provisioning permissions.
 
 ## Documentation map
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the customizer, the settings UI and the storage work.
+- [docs/LIST-SETTINGS-VERIFICATION.md](docs/LIST-SETTINGS-VERIFICATION.md): runtime, cache and tenant-wide proof with remaining validation limits.
+- [docs/HIDDEN-LIST-DESIGN.md](docs/HIDDEN-LIST-DESIGN.md): tenant-wide settings store, cache contract and reproducible performance experiment.
 - [docs/DECISIONS.md](docs/DECISIONS.md): architecture decision records, including rejected options and the evidence.
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): runbook for admin teams: deploy, upgrade, configure, troubleshoot.
 - [docs/LESSONS.md](docs/LESSONS.md): lessons learned building and proving this on a real tenant.

@@ -11,6 +11,7 @@ export interface ISettingsPanelProps {
   isOpen: boolean;
   enabled: boolean;
   canEdit: boolean;
+  needsSave: boolean;
   onSave: (enabled: boolean) => Promise<void>;
   onDismiss: () => void;
 }
@@ -48,7 +49,7 @@ export const SettingsPanel: React.FunctionComponent<ISettingsPanelProps> = (prop
 
   const footer = (): JSX.Element => (
     <Stack horizontal tokens={{ childrenGap: 8 }}>
-      <PrimaryButton text={strings.Save} onClick={save} disabled={!props.canEdit || saving || enabled === props.enabled} data-automation-id="jfdi-unav-save" />
+      <PrimaryButton text={strings.Save} onClick={save} disabled={!props.canEdit || saving || (!props.needsSave && enabled === props.enabled)} data-automation-id="jfdi-unav-save" />
       <DefaultButton text={strings.Cancel} onClick={props.onDismiss} disabled={saving} />
     </Stack>
   );

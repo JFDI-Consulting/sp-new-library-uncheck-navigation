@@ -1,0 +1,117 @@
+{
+  "version": "1.0.0.4",
+  "componentId": "d31c6f18-3a0d-462b-b677-c09314fbf3e6",
+  "site": "https://g53.sharepoint.com/sites/UncheckNavTest",
+  "list": {
+    "HasUniqueRoleAssignments": true,
+    "EnableAttachments": false,
+    "EnableVersioning": true,
+    "Hidden": true,
+    "Id": "f526f38c-c7af-4e5b-8480-db6fe880d163",
+    "NoCrawl": true
+  },
+  "acl": [
+    {
+      "principalId": 3,
+      "principal": "Uncheck Nav Test Owners",
+      "roles": [
+        {
+          "id": 1073741829,
+          "name": "Full Control",
+          "type": 5
+        }
+      ]
+    },
+    {
+      "principalId": 4,
+      "principal": "Uncheck Nav Test Visitors",
+      "roles": [
+        {
+          "id": 1073741826,
+          "name": "Read",
+          "type": 2
+        }
+      ]
+    },
+    {
+      "principalId": 5,
+      "principal": "Uncheck Nav Test Members",
+      "roles": [
+        {
+          "id": 1073741826,
+          "name": "Read",
+          "type": 2
+        }
+      ]
+    }
+  ],
+  "policy": {
+    "NoScript": 2,
+    "PropertyBagException": false
+  },
+  "deployedApp": {
+    "AadAppId": "00000000-0000-0000-0000-000000000000",
+    "AadPermissions": null,
+    "AppCatalogVersion": "1.0.0.4",
+    "CanUpgrade": false,
+    "CDNLocation": "SharePoint Online",
+    "ContainsTenantWideExtension": true,
+    "CurrentVersionDeployed": true,
+    "Deployed": true,
+    "ErrorMessage": "No errors.",
+    "ID": "384aa95e-2a2b-4885-8c6d-069642bee9ad",
+    "InstalledVersion": "",
+    "IsClientSideSolution": true,
+    "IsEnabled": true,
+    "IsPackageDefaultSkipFeatureDeployment": true,
+    "IsValidAppPackage": true,
+    "ProductId": "3d32ef0c-4b53-4eb9-b342-10def9451d2e",
+    "ShortDescription": "Defaults \"Show in site navigation\" to unchecked when creating lists and libraries.",
+    "SkipDeploymentFeature": true,
+    "StoreAssetId": "",
+    "SupportsTeamsTabs": false,
+    "ThumbnailUrl": "",
+    "Title": "sp-new-library-uncheck-navigation-client-side-solution"
+  },
+  "serviceSha256": "33b1fa581bb852e4e40f9b4ea12b4d655922dc7b5abd4bb889b50dfca5ed84c7",
+  "unitTests": {
+    "passed": 14,
+    "command": "npm run build",
+    "exitCode": 0
+  },
+  "readerRepair": "Associated Members and Visitors already Read; repeat command retained existing access",
+  "nonAdminLoginTested": false,
+  "fields": [
+    {
+      "EnforceUniqueValues": true,
+      "Indexed": true,
+      "InternalName": "Title",
+      "Required": true,
+      "TypeAsString": "Text"
+    },
+    {
+      "EnforceUniqueValues": false,
+      "Indexed": false,
+      "InternalName": "Enabled",
+      "Required": true,
+      "TypeAsString": "Boolean"
+    },
+    {
+      "EnforceUniqueValues": false,
+      "Indexed": false,
+      "InternalName": "JfdiUnavStoreId",
+      "Required": true,
+      "TypeAsString": "Text"
+    }
+  ],
+  "items": [
+    {
+      "HasUniqueRoleAssignments": false,
+      "Id": 1,
+      "Title": "configuration",
+      "Enabled": true,
+      "JfdiUnavStoreId": "d31c6f18-3a0d-462b-b677-c09314fbf3e6",
+      "ID": 1
+    }
+  ]
+}

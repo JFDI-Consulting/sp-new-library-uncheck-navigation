@@ -3,7 +3,7 @@
   "solution": {
     "name": "sp-new-library-uncheck-navigation-client-side-solution",
     "id": "3d32ef0c-4b53-4eb9-b342-10def9451d2e",
-    "version": "1.0.0.3",
+    "version": "1.0.0.4",
     "includeClientSideAssets": true,
     "isDomainIsolated": false,
     "developer": {
@@ -37,7 +37,8 @@
           ]
         }
       }
-    ]
+    ],
+    "skipFeatureDeployment": true
   },
   "paths": {
     "zippedPackage": "solution/sp-new-library-uncheck-navigation.sppkg"

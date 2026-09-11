@@ -1,0 +1,900 @@
+{
+  "timestamp": "2026-09-11T11:26:32.992Z",
+  "site": "https://g53.sharepoint.com/sites/UncheckNavTest",
+  "title": "JfdiUnavStorageProof1789125992992",
+  "environment": {
+    "node": "v22.17.1",
+    "browser": "Chromium, headless",
+    "network": "existing host network/proxy; no throttling"
+  },
+  "budgets": {
+    "warmReadP95Ms": 300,
+    "pageReadP95Ms": 500,
+    "cacheP95Ms": 1
+  },
+  "limits": [
+    "Only administrator identity authenticated; ACL verification is not non-admin write-denial proof.",
+    "Instrumented REST lookup; production customizer remains unchanged.",
+    "Single tenant, client location and run; no fleet-wide latency guarantee."
+  ],
+  "policyBefore": {
+    "NoScript": 2,
+    "PropertyBagException": false
+  },
+  "provisioningCliWallMs": 8952.09412,
+  "list": {
+    "RootFolder": {
+      "ServerRelativeUrl": "/sites/UncheckNavTest/Lists/JfdiUnavStorageProof1789125992992"
+    },
+    "HasUniqueRoleAssignments": true,
+    "Hidden": true,
+    "Id": "9976a66c-44ce-487e-a095-5aecff5d171a",
+    "ItemCount": 1,
+    "NoCrawl": true
+  },
+  "acl": [
+    {
+      "RoleDefinitionBindings": [
+        {
+          "BasePermissions": {
+            "High": "2147483647",
+            "Low": "4294967295"
+          },
+          "Id": 1073741829,
+          "Name": "Full Control"
+        }
+      ],
+      "PrincipalId": 3
+    },
+    {
+      "RoleDefinitionBindings": [
+        {
+          "BasePermissions": {
+            "High": "176",
+            "Low": "138612833"
+          },
+          "Id": 1073741826,
+          "Name": "Read"
+        }
+      ],
+      "PrincipalId": 4
+    },
+    {
+      "RoleDefinitionBindings": [
+        {
+          "BasePermissions": {
+            "High": "176",
+            "Low": "138612833"
+          },
+          "Id": 1073741826,
+          "Name": "Read"
+        }
+      ],
+      "PrincipalId": 5
+    }
+  ],
+  "endpoint": "https://g53.sharepoint.com/sites/UncheckNavTest/_api/web/GetList(@list)/items?@list='%2Fsites%2FUncheckNavTest%2FLists%2FJfdiUnavStorageProof1789125992992'&$select=Id,Enabled&$filter=Title%20eq%20'configuration'&$top=2",
+  "roundTrip": {
+    "disabledStatus": 204,
+    "disabled": false,
+    "conflictStatus": 412,
+    "enabledStatus": 204,
+    "enabled": true
+  },
+  "firstRead": {
+    "ms": 133.10000002384186,
+    "status": 200,
+    "bytes": 42
+  },
+  "warmReads": [
+    {
+      "ms": 79,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 87.39999997615814,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 83.19999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 80.19999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 86.5,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 110.29999995231628,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 76.30000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 82.10000002384186,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 112.80000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 86.79999995231628,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 72.80000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 81.59999996423721,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 93.70000004768372,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 83.29999995231628,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 85.30000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 73.40000003576279,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 64.60000002384186,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 76.39999997615814,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 87.30000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 71.30000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 72.30000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 74.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 70.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 79.70000004768372,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 71.89999997615814,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 71.19999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75.20000004768372,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 81,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75.5,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 80.5,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 74,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 69.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75.89999997615814,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 70.80000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 79.5,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 80.89999997615814,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 74.20000004768372,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 63.19999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 80.30000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 73.80000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 75.60000002384186,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 74.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 74.5,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 83.80000001192093,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 66.59999996423721,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 79.69999998807907,
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "ms": 67.90000003576279,
+      "status": 200,
+      "bytes": 42
+    }
+  ],
+  "missingReads": [
+    {
+      "ms": 59.89999997615814,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 124.80000001192093,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 148.69999998807907,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 67.40000003576279,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 60.30000001192093,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 60.5,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 62.69999998807907,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 61.10000002384186,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 63.5,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 60.5,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 60.90000003576279,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 53.89999997615814,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 59.89999997615814,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 63.69999998807907,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 65.30000001192093,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 60.10000002384186,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 62.19999998807907,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 61.39999997615814,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 59.19999998807907,
+      "status": 404,
+      "bytes": 124
+    },
+    {
+      "ms": 58,
+      "status": 404,
+      "bytes": 124
+    }
+  ],
+  "cache": {
+    "perReadBatchAveragesMs": [
+      0.001,
+      0.000699999988079071,
+      0.000699999988079071,
+      0.000699999988079071,
+      0.0007000000476837158,
+      0.0007999999523162842,
+      0.0006000000238418579,
+      0.001,
+      0.000699999988079071,
+      0.0006000000238418579,
+      0.0005,
+      0.0003999999761581421,
+      0.0005,
+      0.00040000003576278685,
+      0.0005,
+      0.0003999999761581421,
+      0.0005,
+      0.00030000001192092895,
+      0.0005,
+      0.00030000001192092895,
+      0.0005,
+      0.0003999999761581421,
+      0.0003999999761581421,
+      0.00040000003576278685,
+      0.0003999999761581421,
+      0.00040000003576278685,
+      0.0003999999761581421,
+      0.0003999999761581421,
+      0.00040000003576278685,
+      0.0003999999761581421
+    ],
+    "networkRequests": 0
+  },
+  "navigations": [
+    {
+      "pair": 0,
+      "enabled": false,
+      "dclMs": 532.6999999880791,
+      "newReadyMs": 879
+    },
+    {
+      "pair": 0,
+      "enabled": true,
+      "dclMs": 585.3999999761581,
+      "read": {
+        "ms": 163.10000002384186,
+        "readyMs": 748.5,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 876.8000000119209
+    },
+    {
+      "pair": 1,
+      "enabled": true,
+      "dclMs": 585,
+      "read": {
+        "ms": 131.39999997615814,
+        "readyMs": 716.3999999761581,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 890.1999999880791
+    },
+    {
+      "pair": 1,
+      "enabled": false,
+      "dclMs": 498,
+      "newReadyMs": 797.6999999880791
+    },
+    {
+      "pair": 2,
+      "enabled": false,
+      "dclMs": 486.19999998807907,
+      "newReadyMs": 736.0999999642372
+    },
+    {
+      "pair": 2,
+      "enabled": true,
+      "dclMs": 636.1999999880791,
+      "read": {
+        "ms": 137.30000001192093,
+        "readyMs": 773.5999999642372,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 918.2999999523163
+    },
+    {
+      "pair": 3,
+      "enabled": true,
+      "dclMs": 577.6000000238419,
+      "read": {
+        "ms": 133.19999998807907,
+        "readyMs": 710.8000000119209,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 851.3000000119209
+    },
+    {
+      "pair": 3,
+      "enabled": false,
+      "dclMs": 622.8000000119209,
+      "newReadyMs": 906.5
+    },
+    {
+      "pair": 4,
+      "enabled": false,
+      "dclMs": 615,
+      "newReadyMs": 895.6999999880791
+    },
+    {
+      "pair": 4,
+      "enabled": true,
+      "dclMs": 595.1999999880791,
+      "read": {
+        "ms": 132.5,
+        "readyMs": 727.6999999880791,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 869.4000000357628
+    },
+    {
+      "pair": 5,
+      "enabled": true,
+      "dclMs": 603.3000000119209,
+      "read": {
+        "ms": 148.30000001192093,
+        "readyMs": 751.6000000238419,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 957
+    },
+    {
+      "pair": 5,
+      "enabled": false,
+      "dclMs": 569.8000000119209,
+      "newReadyMs": 866
+    },
+    {
+      "pair": 6,
+      "enabled": false,
+      "dclMs": 590.6999999880791,
+      "newReadyMs": 864.8000000119209
+    },
+    {
+      "pair": 6,
+      "enabled": true,
+      "dclMs": 2123.5,
+      "read": {
+        "ms": 139.80000001192093,
+        "readyMs": 2263.300000011921,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 2414.300000011921
+    },
+    {
+      "pair": 7,
+      "enabled": true,
+      "dclMs": 614.4000000357628,
+      "read": {
+        "ms": 135.5,
+        "readyMs": 749.9000000357628,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 906.8000000119209
+    },
+    {
+      "pair": 7,
+      "enabled": false,
+      "dclMs": 486.69999998807907,
+      "newReadyMs": 764.3999999761581
+    },
+    {
+      "pair": 8,
+      "enabled": false,
+      "dclMs": 499.60000002384186,
+      "newReadyMs": 775.4000000357628
+    },
+    {
+      "pair": 8,
+      "enabled": true,
+      "dclMs": 502.80000001192093,
+      "read": {
+        "ms": 114.80000001192093,
+        "readyMs": 617.6999999880791,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 800.6000000238419
+    },
+    {
+      "pair": 9,
+      "enabled": true,
+      "dclMs": 534,
+      "read": {
+        "ms": 118.69999998807907,
+        "readyMs": 652.6999999880791,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 877.9000000357628
+    },
+    {
+      "pair": 9,
+      "enabled": false,
+      "dclMs": 492.30000001192093,
+      "newReadyMs": 796.3000000119209
+    },
+    {
+      "pair": 10,
+      "enabled": false,
+      "dclMs": 501.19999998807907,
+      "newReadyMs": 765.3000000119209
+    },
+    {
+      "pair": 10,
+      "enabled": true,
+      "dclMs": 473.60000002384186,
+      "read": {
+        "ms": 132.19999998807907,
+        "readyMs": 605.8000000119209,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 751.3000000119209
+    },
+    {
+      "pair": 11,
+      "enabled": true,
+      "dclMs": 523.4000000357628,
+      "read": {
+        "ms": 137.30000001192093,
+        "readyMs": 660.7000000476837,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 808.8000000119209
+    },
+    {
+      "pair": 11,
+      "enabled": false,
+      "dclMs": 551.6999999880791,
+      "newReadyMs": 839
+    },
+    {
+      "pair": 12,
+      "enabled": false,
+      "dclMs": 590.8000000119209,
+      "newReadyMs": 868.8000000119209
+    },
+    {
+      "pair": 12,
+      "enabled": true,
+      "dclMs": 477.19999998807907,
+      "read": {
+        "ms": 134.60000002384186,
+        "readyMs": 611.8000000119209,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 763.8000000119209
+    },
+    {
+      "pair": 13,
+      "enabled": true,
+      "dclMs": 644.3000000119209,
+      "read": {
+        "ms": 161.69999998807907,
+        "readyMs": 806,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 920.5
+    },
+    {
+      "pair": 13,
+      "enabled": false,
+      "dclMs": 519.1999999880791,
+      "newReadyMs": 818.0999999642372
+    },
+    {
+      "pair": 14,
+      "enabled": false,
+      "dclMs": 511.7000000476837,
+      "newReadyMs": 784.3000000119209
+    },
+    {
+      "pair": 14,
+      "enabled": true,
+      "dclMs": 476,
+      "read": {
+        "ms": 143,
+        "readyMs": 619,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 755.8000000119209
+    },
+    {
+      "pair": 15,
+      "enabled": true,
+      "dclMs": 488.10000002384186,
+      "read": {
+        "ms": 137.5,
+        "readyMs": 625.6000000238419,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 767
+    },
+    {
+      "pair": 15,
+      "enabled": false,
+      "dclMs": 605.6000000238419,
+      "newReadyMs": 888.1000000238419
+    },
+    {
+      "pair": 16,
+      "enabled": false,
+      "dclMs": 552.5,
+      "newReadyMs": 862.8999999761581
+    },
+    {
+      "pair": 16,
+      "enabled": true,
+      "dclMs": 486.0999999642372,
+      "read": {
+        "ms": 142.69999998807907,
+        "readyMs": 628.7999999523163,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 782.8999999761581
+    },
+    {
+      "pair": 17,
+      "enabled": true,
+      "dclMs": 558.6000000238419,
+      "read": {
+        "ms": 129.80000001192093,
+        "readyMs": 688.4000000357628,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 837.2000000476837
+    },
+    {
+      "pair": 17,
+      "enabled": false,
+      "dclMs": 500.7999999523163,
+      "newReadyMs": 791.2999999523163
+    },
+    {
+      "pair": 18,
+      "enabled": false,
+      "dclMs": 513.6999999880791,
+      "newReadyMs": 864.8000000119209
+    },
+    {
+      "pair": 18,
+      "enabled": true,
+      "dclMs": 487.30000001192093,
+      "read": {
+        "ms": 136.30000001192093,
+        "readyMs": 623.6000000238419,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 756.4000000357628
+    },
+    {
+      "pair": 19,
+      "enabled": true,
+      "dclMs": 502.2999999523163,
+      "read": {
+        "ms": 111.20000004768372,
+        "readyMs": 613.5,
+        "status": 200,
+        "bytes": 42
+      },
+      "newReadyMs": 745.5
+    },
+    {
+      "pair": 19,
+      "enabled": false,
+      "dclMs": 567.5,
+      "newReadyMs": 871.6999999880791
+    }
+  ],
+  "summary": {
+    "warm": {
+      "n": 50,
+      "min": 63.19999998807907,
+      "median": 75.69999998807907,
+      "p95": 93.70000004768372,
+      "max": 112.80000001192093
+    },
+    "missing": {
+      "n": 20,
+      "min": 53.89999997615814,
+      "median": 60.90000003576279,
+      "p95": 124.80000001192093,
+      "max": 148.69999998807907
+    },
+    "cache": {
+      "n": 30,
+      "min": 0.00030000001192092895,
+      "median": 0.0005,
+      "p95": 0.001,
+      "max": 0.001
+    },
+    "concurrentRead": {
+      "n": 20,
+      "min": 111.20000004768372,
+      "median": 135.5,
+      "p95": 161.69999998807907,
+      "max": 163.10000002384186
+    },
+    "baselineNewReady": {
+      "n": 20,
+      "min": 736.0999999642372,
+      "median": 839,
+      "p95": 895.6999999880791,
+      "max": 906.5
+    },
+    "withReadNewReady": {
+      "n": 20,
+      "min": 745.5,
+      "median": 837.2000000476837,
+      "p95": 957,
+      "max": 2414.300000011921
+    },
+    "pairedNewReadyDifference": {
+      "n": 20,
+      "min": -126.19999998807907,
+      "median": -14,
+      "p95": 182.19999998807907,
+      "max": 1549.5
+    },
+    "settingsReadyBeforeNew": 20
+  },
+  "budgetPass": true,
+  "cleanupError": "Command failed: m365 request --url https://g53.sharepoint.com/sites/UncheckNavTest/_api/web/lists(guid'9976a66c-44ce-487e-a095-5aecff5d171a') --method delete --accept application/json;odata=nometadata --output json\nError: Request failed with status code 412\n",
+  "cleanupRecovery": {
+    "deletedListId": "9976a66c-44ce-487e-a095-5aecff5d171a",
+    "absenceVerified": true,
+    "method": "M365 DELETE with IF-MATCH:*; collection GET returned []",
+    "timestamp": "2026-09-11T11:28:54.319824+00:00"
+  }
+}

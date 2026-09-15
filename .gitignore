@@ -74,3 +74,6 @@ Thumbs.db
 # oh-my-claudecode runtime state
 .omc/
 !.omc/skills/
+
+# oh-my-codex runtime state
+.omx/

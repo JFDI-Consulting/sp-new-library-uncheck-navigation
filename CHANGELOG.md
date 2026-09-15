@@ -2,6 +2,13 @@
 
 All notable changes to sp-new-library-uncheck-navigation are documented in this file.
 
+## [1.0.0.5] - 2026-09-15
+
+### Changed
+
+- Set the App Catalog display title to **New List and Library Site Navigation Off by Default**.
+- Ignore local OMX runtime state in Git.
+
 ## [1.0.0.4] - 2026-09-11
 
 ### Added
